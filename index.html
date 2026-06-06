@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Test Client & Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Custom scrollbar styles for clean visual appearance */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
+
+  <!-- TOP HEADER -->
+  <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 sticky top-0 z-50 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          <span>🛠️ API Developer Playground</span>
+          <span class="text-xs font-normal bg-indigo-600/30 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">v3-ready</span>
+        </h1>
+        <p class="text-xs text-slate-400">Interactive test suite for testing and debugging HR, Sales, Attendance & Payroll API</p>
+      </div>
+
+      <!-- Server & Auth Status -->
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Base URL -->
+        <div class="flex flex-col">
+          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Base URL</label>
+          <input id="baseUrlInput" type="text" value="https://checkin-me.onrender.com" 
+                 class="bg-slate-950 text-slate-200 border border-slate-700 rounded px-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none w-52" />
+        </div>
+
+        <!-- Token -->
+        <div class="flex flex-col">
+          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">JWT Token (Bearer)</label>
+          <div class="relative flex items-center">
+            <input id="tokenInput" type="text" placeholder="No active session" 
+                   class="bg-slate-950 text-slate-200 border border-slate-700 rounded-l px-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none w-64 truncate" />
+            <button onclick="clearToken()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 border-y border-r border-slate-700 hover:text-white px-2 py-1.5 text-xs rounded-r transition-colors">Clear</button>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="flex gap-2 self-end">
+          <button onclick="fetchMe()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3 py-1.5 rounded text-xs transition-all shadow-sm">
+            Fetch /me
+          </button>
+          <button onclick="getLocation()" class="bg-teal-600 hover:bg-teal-500 text-white font-medium px-3 py-1.5 rounded text-xs transition-all shadow-sm" title="Get browser location coordinates for forms">
+            📍 Get GPS
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- BODY WORKSPACE -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- NAVIGATION TABS (LEFT COLUMN) -->
+    <section class="lg:col-span-3 flex flex-col gap-2">
+      <div class="bg-slate-800 border border-slate-700 rounded-lg p-3 sticky top-28">
+        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest px-3 mb-3">API Categories</h2>
+        <nav class="flex flex-col gap-1 text-sm" id="navTabs">
+          <button onclick="switchTab('auth-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors bg-indigo-600 text-white">🔑 Auth & System</button>
+          <button onclick="switchTab('org-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">🏢 Organization & Staff</button>
+          <button onclick="switchTab('shifts-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">📅 Shifts & Schedules</button>
+          <button onclick="switchTab('attendance-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">⏰ Smart Attendance</button>
+          <button onclick="switchTab('leave-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">🏖️ Leave & Overtime</button>
+          <button onclick="switchTab('sales-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">🤝 CRM & Outside Sales</button>
+          <button onclick="switchTab('payroll-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">💵 Payroll & Bank Batches</button>
+          <button onclick="switchTab('ewa-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">⚡ EWA & Integration</button>
+        </nav>
+        <div class="mt-4 pt-4 border-t border-slate-700 text-xs text-slate-400 space-y-2">
+          <p class="flex justify-between"><span>System Status:</span> <span id="healthBadge" class="text-slate-500 font-semibold">Unknown</span></p>
+          <button onclick="checkHealth()" class="w-full bg-slate-700 hover:bg-slate-600 py-1 rounded font-medium text-[11px] text-slate-300 transition-colors">Check Health</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN FORM INTERFACE (MIDDLE COLUMN) -->
+    <section class="lg:col-span-5 space-y-6">
+      
+      <!-- 1. AUTH & SYSTEM -->
+      <div id="auth-section" class="tab-pane space-y-4">
+        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">🔑 Authentication & Initialization</h2>
+        
+        <!-- Setup -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
+          <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded mb-2">POST</span>
+          <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/setup</h3>
+          <p class="text-xs text-slate-400 mb-3">Establish the root organization and administrator account.</p>
+          <form onsubmit="handleFormSubmit(event, '/api/v1/setup', 'POST')" class="space-y-3">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold uppercase">Org Name</label>
+                <input type="text" name="org_name" value="Demo Company" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold uppercase">Admin Name</label>
+                <input type="text" name="admin_name" value="Owner" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold uppercase">Email Address</label>
+                <input type="email" name="email" value="admin@example.com" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold uppercase">Password</label>
+                <input type="password" name="password" value="admin123456" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+            </div>
+            <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium py-1.5 rounded transition-colors">Initialize Setup</button>
+          </form>
+        </div>
+
+        <!-- Login -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
+          <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded mb-2">POST</span>
+          <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/auth/login</h3>
+          <p class="text-xs text-slate-400 mb-3">Sign in to retrieve a Bearer JWT Session Token.</p>
+          <form onsubmit="handleLoginSubmit(event)" class="space-y-3">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold uppercase">Email Address</label>
+                <input type="email" id="loginEmail" value="admin@example.com" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold uppercase">Password</label>
+                <input type="password" id="loginPassword" value="admin123456" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+            </div>
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-1.5 rounded transition-colors">Authenticate</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- 2. ORG, EMPLOYEES & BRANCHES -->
+      <div id="org-section" class="tab-pane hidden space-y-4">
+        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">🏢 Organization Structures</h2>
+
+        <!-- Branches Panel -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/branches</h3>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/branches')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Register a physical office location workspace area.</p>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/branches', 'POST')" class="space-y-2 mt-3">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Branch Name</label>
+                  <input type="text" name="name" value="Phnom Penh HQ" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Radius Threshold (m)</label>
+                  <input type="number" name="radius_m" value="100" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Latitude</label>
+                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Longitude</label>
+                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Register Branch</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Departments Panel -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/departments</h3>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/departments')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
+            </div>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/departments', 'POST')" class="space-y-2 mt-3">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Dept Name</label>
+                  <input type="text" name="name" value="Engineering" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Branch ID</label>
+                  <input type="number" name="branch_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Create Department</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Employees Panel -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="bg-indigo-900/40 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded">GET</span>
+                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/employees</h3>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Search or retrieve users inside organization scope.</p>
+            <form onsubmit="handleEmployeeSearch(event)" class="space-y-2 mt-3">
+              <div class="grid grid-cols-3 gap-1">
+                <input type="text" id="empSearchQ" placeholder="Query (name/email)" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none col-span-1" />
+                <input type="number" id="empSearchLimit" placeholder="Limit" value="10" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none col-span-1" />
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold rounded p-1.5">Query</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="border-t border-slate-700 pt-3">
+            <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/employees</h3>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/employees', 'POST')" class="space-y-2 mt-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Full Name</label>
+                  <input type="text" name="name" value="John Doe" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Email Address</label>
+                  <input type="email" name="email" value="john@example.com" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Password</label>
+                  <input type="password" name="password" value="password123" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Role Authority</label>
+                  <select name="role" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="employee">Employee</option>
+                    <option value="sales">Sales Specialist</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                    <option value="owner">Owner</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Daily Base Rate ($)</label>
+                  <input type="number" name="daily_rate" value="50" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Branch ID</label>
+                  <input type="number" name="branch_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Department ID</label>
+                  <input type="number" name="department_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Create User Profile</button>
+            </form>
+          </div>
+
+          <div class="border-t border-slate-700 pt-3">
+            <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
+            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/employees/{id}</h3>
+            <form onsubmit="handleEmployeePatch(event)" class="space-y-2 mt-2">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400 font-semibold">Employee ID (UUID)</label>
+                  <input type="text" id="patchEmpId" placeholder="uuid-xxxx" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 font-semibold">New Name</label>
+                  <input type="text" id="patchEmpName" value="John Updated" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 font-semibold">Update Role</label>
+                  <select id="patchEmpRole" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="">Keep Unchanged</option>
+                    <option value="employee">Employee</option>
+                    <option value="sales">Sales Specialist</option>
+                    <option value="manager">Manager</option>
+                    <option value="admin">Admin</option>
+                    <option value="owner">Owner</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Modify Profile</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. SHIFTS & SCHEDULES -->
+      <div id="shifts-section" class="tab-pane hidden space-y-4">
+        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">📅 Shifts & Schedule Builder</h2>
+
+        <!-- Shifts Definition -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+              <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/shifts</h3>
+            </div>
+            <button onclick="handleGetRequest('/api/v1/shifts')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
+          </div>
+          <form onsubmit="handleFormSubmit(event, '/api/v1/shifts', 'POST')" class="space-y-3 mt-3">
+            <div>
+              <label class="block text-[10px] text-slate-400">Shift Template Name</label>
+              <input type="text" name="name" value="Day Shift" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400">Start Time (HH:MM)</label>
+                <input type="text" name="start_time" value="08:00" placeholder="e.g. 08:00" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">End Time (HH:MM)</label>
+                <input type="text" name="end_time" value="17:00" placeholder="e.g. 17:00" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+            </div>
+            <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Save Shift Blueprint</button>
+          </form>
+        </div>
+
+        <!-- Schedule Assignments -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+              <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/schedule-assignments</h3>
+            </div>
+            <button onclick="handleGetRequest('/api/v1/schedule-assignments')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">Assign designated work shifts to user resources.</p>
+          <form onsubmit="handleFormSubmit(event, '/api/v1/schedule-assignments', 'POST')" class="space-y-3 mt-3">
+            <div>
+              <label class="block text-[10px] text-slate-400">User ID (UUID)</label>
+              <input type="text" name="user_id" placeholder="uuid-xxxx-xxxx" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400">Shift Plan ID</label>
+                <input type="number" name="shift_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">Date</label>
+                <input type="date" name="date" value="2026-06-08" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+            </div>
+            <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Execute Assignment</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- 4. SMART ATTENDANCE -->
+      <div id="attendance-section" class="tab-pane hidden space-y-4">
+        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">⏰ Smart Attendance</h2>
+
+        <!-- QR Code Attendance / Clock-in -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
+          <div>
+            <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/attendance/clock</h3>
+            <p class="text-xs text-slate-400 mt-1">Generic geo-fenced coordinates verification endpoint (QR method shown).</p>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/attendance/clock', 'POST')" class="space-y-2 mt-3">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Direction</label>
+                  <select name="kind" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="in">In</option>
+                    <option value="out">Out</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Source Channel</label>
+                  <input type="text" name="source" value="qr" readonly class="w-full bg-slate-900 text-xs border border-slate-700 rounded p-1.5 text-slate-400 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">QR token string</label>
+                  <input type="text" name="qr_token" value="token-from-admin" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Latitude</label>
+                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Longitude</label>
+                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">GPS Accuracy (m)</label>
+                  <input type="number" name="gps_accuracy_m" value="15" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Submit Clock Request</button>
+            </form>
+          </div>
+
+          <!-- Face-Scan Attendance -->
+          <div class="border-t border-slate-700 pt-3">
+            <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/attendance/face-scan</h3>
+            <p class="text-xs text-slate-400 mt-1">Submit confidence metrics for face biometric validations.</p>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/attendance/face-scan', 'POST')" class="space-y-2 mt-2">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Direction</label>
+                  <select name="kind" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="in">In</option>
+                    <option value="out">Out</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Source</label>
+                  <input type="text" name="source" value="face_scan" readonly class="w-full bg-slate-900 text-xs border border-slate-700 rounded p-1.5 text-slate-400 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Score Match (0-100)</label>
+                  <input type="number" step="any" name="face_score" value="91.5" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Latitude</label>
+                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Longitude</label>
+                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Submit Face Biometrics</button>
+            </form>
+          </div>
+
+          <!-- Generate QR Tokens -->
+          <div class="border-t border-slate-700 pt-3">
+            <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/attendance/qr-tokens</h3>
+            <p class="text-xs text-slate-400 mt-1">Admin generation of authenticated tokens for physical displays.</p>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/attendance/qr-tokens', 'POST')" class="space-y-2 mt-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Target Branch ID</label>
+                  <input type="number" name="branch_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">TTL validity (seconds)</label>
+                  <input type="number" name="ttl_seconds" value="60" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Create Live Token</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Queries & History -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-3">
+          <h3 class="font-bold text-xs text-slate-400 uppercase tracking-wide">Historical Analysis</h3>
+          
+          <div class="border-b border-slate-700 pb-2">
+            <span class="bg-indigo-900/40 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded">GET</span>
+            <span class="font-semibold text-xs text-slate-300 ml-1">/api/v1/attendance/today</span>
+            <div class="flex items-center gap-2 mt-2">
+              <input type="date" id="attTodayDate" value="2026-06-05" class="bg-slate-950 text-xs border border-slate-700 rounded p-1 w-full focus:outline-none" />
+              <button onclick="fetchTodayAttendance()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-xs whitespace-nowrap">Query Day</button>
+            </div>
+          </div>
+
+          <div>
+            <span class="bg-indigo-900/40 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded">GET</span>
+            <span class="font-semibold text-xs text-slate-300 ml-1">/api/v1/attendance/sessions</span>
+            <div class="space-y-2 mt-2">
+              <div class="grid grid-cols-2 gap-1">
+                <input type="date" id="attSessFrom" value="2026-06-01" class="bg-slate-950 text-xs border border-slate-700 rounded p-1 focus:outline-none" />
+                <input type="date" id="attSessTo" value="2026-06-30" class="bg-slate-950 text-xs border border-slate-700 rounded p-1 focus:outline-none" />
+              </div>
+              <input type="text" id="attSessUser" placeholder="User UUID (Optional)" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 w-full focus:outline-none" />
+              <button onclick="fetchSessionsAttendance()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-xs w-full">Fetch Selected Range</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. LEAVE & OVERTIME -->
+      <div id="leave-section" class="tab-pane hidden space-y-4">
+        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">🏖️ Leave & Overtime Allocations</h2>
+
+        <!-- Leave Module -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/leave/requests</h3>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/leave/requests')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
+            </div>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/leave/requests', 'POST')" class="space-y-2 mt-3">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Leave Type</label>
+                  <select name="leave_type" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="casual">Casual Leave</option>
+                    <option value="sick">Sick Leave</option>
+                    <option value="annual">Annual Leave</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Start Date</label>
+                  <input type="date" name="start_date" value="2026-06-10" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">End Date</label>
+                  <input type="date" name="end_date" value="2026-06-12" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">Reason</label>
+                <input type="text" name="reason" value="Personal matters" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Submit Leave Request</button>
+            </form>
+          </div>
+
+          <div class="border-t border-slate-700 pt-3">
+            <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
+            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/leave/requests/{id}/approve</h3>
+            <form onsubmit="handleLeaveApprove(event)" class="space-y-2 mt-2">
+              <div class="grid grid-cols-3 gap-2">
+                <div class="col-span-2">
+                  <label class="block text-[10px] text-slate-400">Request ID (Numeric)</label>
+                  <input type="number" id="leaveAppId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Action Status</label>
+                  <select id="leaveAppStatus" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="approved">Approve</option>
+                    <option value="rejected">Reject</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Finalize Decision</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Overtime Module -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/overtime/requests</h3>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/overtime/requests')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
+            </div>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/overtime/requests', 'POST')" class="space-y-2 mt-3">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Target Date</label>
+                  <input type="date" name="date" value="2026-06-08" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Hours Requested</label>
+                  <input type="number" step="any" name="hours" value="2.5" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">Overtime Reason</label>
+                <input type="text" name="reason" value="Project deployment" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Request Overtime</button>
+            </form>
+          </div>
+
+          <div class="border-t border-slate-700 pt-3">
+            <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
+            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/overtime/requests/{id}/approve</h3>
+            <form onsubmit="handleOvertimeApprove(event)" class="space-y-2 mt-2">
+              <div class="grid grid-cols-3 gap-2">
+                <div class="col-span-2">
+                  <label class="block text-[10px] text-slate-400">Request ID (Numeric)</label>
+                  <input type="number" id="otAppId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Action Status</label>
+                  <select id="otAppStatus" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="approved">Approve</option>
+                    <option value="rejected">Reject</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Finalize Decision</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. CRM & OUTSIDE SALES -->
+      <div id="sales-section" class="tab-pane hidden space-y-4">
+        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">🤝 CRM & Outside Sales Tracking</h2>
+
+        <!-- Customers Panel -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+              <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/customers</h3>
+            </div>
+            <button onclick="handleGetRequest('/api/v1/customers')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
+          </div>
+          <form onsubmit="handleFormSubmit(event, '/api/v1/customers', 'POST')" class="space-y-2 mt-3">
+            <div>
+              <label class="block text-[10px] text-slate-400">Company Name</label>
+              <input type="text" name="name" value="Acme Corp" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400">Contact Person</label>
+                <input type="text" name="contact_person" value="Jane" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">Phone</label>
+                <input type="text" name="phone" value="+85512345678" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+            </div>
+            <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Register Client Profile</button>
+          </form>
+        </div>
+
+        <!-- Visit Operations -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/sales/visits/checkin</h3>
+              </div>
+              <button onclick="handleFetchVisits()" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET Range →</button>
+            </div>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/sales/visits/checkin', 'POST')" class="space-y-2 mt-3">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Customer ID</label>
+                  <input type="number" name="customer_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Latitude</label>
+                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Longitude</label>
+                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">Notes</label>
+                <input type="text" name="notes" value="Initial meeting" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Perform Check-in</button>
+            </form>
+          </div>
+
+          <div class="border-t border-slate-700 pt-3">
+            <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
+            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/sales/visits/{id}/checkout</h3>
+            <form onsubmit="handleSalesCheckout(event)" class="space-y-2 mt-2">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400 font-semibold">Visit ID</label>
+                  <input type="number" id="visitCheckoutId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 font-semibold">Latitude</label>
+                  <input type="number" step="any" id="visitCheckoutLat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 font-semibold">Longitude</label>
+                  <input type="number" step="any" id="visitCheckoutLng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400 font-semibold">Checkout Comments</label>
+                <input type="text" id="visitCheckoutNotes" value="Follow up scheduled" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Perform Checkout</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- CRM Operations -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-3">
+          <h3 class="font-bold text-xs text-slate-400 uppercase tracking-wide">Summary & Performance Metrics</h3>
+          
+          <div class="border-b border-slate-700 pb-2">
+            <div class="flex items-center gap-2">
+              <span class="bg-indigo-900/40 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded">GET</span>
+              <span class="font-semibold text-xs text-slate-300">/api/v1/sales/summary</span>
+            </div>
+            <div class="flex gap-1 mt-2">
+              <input type="date" id="salesSumDate" value="2026-06-05" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 w-full focus:outline-none" />
+              <button onclick="fetchSalesSummary()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded whitespace-nowrap">Load Summary</button>
+              <button onclick="postSalesTelegram()" class="bg-sky-600 hover:bg-sky-500 text-xs px-3 py-1.5 rounded text-white whitespace-nowrap">✈️ Telegram</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <span class="font-semibold text-xs text-slate-300 ml-1">/api/v1/kpis</span>
+              </div>
+              <button onclick="fetchKPIs()" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET KPIs →</button>
+            </div>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/kpis', 'POST')" class="space-y-2 mt-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">User ID</label>
+                  <input type="text" name="user_id" placeholder="uuid-xxxx-xxxx" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Target Month</label>
+                  <input type="text" name="month" value="2026-06" placeholder="YYYY-MM" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Target Visits</label>
+                  <input type="number" name="target_visits" value="20" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Target Rev ($)</label>
+                  <input type="number" name="target_revenue" value="5000" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Configure Target</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. PAYROLL & BANKING -->
+      <div id="payroll-section" class="tab-pane hidden space-y-4">
+        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">💵 Payroll Controls & Banking</h2>
+
+        <!-- Payroll Rules -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <div>
+              <span class="bg-blue-900/40 text-blue-400 border border-blue-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PUT</span>
+              <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/payroll/rules</h3>
+            </div>
+            <button onclick="handleGetRequest('/api/v1/payroll/rules')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET Current →</button>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">Configure systemic withholding formulas globally.</p>
+          <form onsubmit="handleFormSubmit(event, '/api/v1/payroll/rules', 'PUT')" class="space-y-2 mt-3">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400">Tax Multiplier (0-1)</label>
+                <input type="number" step="any" name="tax_rate" value="0.1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">Social Insurance (0-1)</label>
+                <input type="number" step="any" name="insurance_rate" value="0.05" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+            </div>
+            <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Set Active Formulas</button>
+          </form>
+        </div>
+
+        <!-- Run Payroll cycles -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/payroll/runs</h3>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/payroll/runs')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET Runs →</button>
+            </div>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/payroll/runs', 'POST')" class="space-y-2 mt-3">
+              <div>
+                <label class="block text-[10px] text-slate-400">Target Month Execution</label>
+                <input type="text" name="month" value="2026-06" placeholder="YYYY-MM" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Initialize Run Process</button>
+            </form>
+          </div>
+
+          <!-- Actions on Existing Run ID -->
+          <div class="border-t border-slate-700 pt-3 space-y-3">
+            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Payroll Run Execution Options</h4>
+            <div>
+              <label class="block text-[10px] text-slate-400 font-semibold mb-1">Target Run ID</label>
+              <input type="number" id="payrollRunId" placeholder="e.g. 1" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 w-full focus:outline-none" />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="getPayrollRunDetails()" class="bg-slate-700 hover:bg-slate-600 text-xs py-1 px-2 rounded">GET Run Profile</button>
+              <button onclick="approvePayrollRun()" class="bg-emerald-600 hover:bg-emerald-500 text-xs py-1 px-2 rounded text-white font-semibold">Approve Run</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="payoutPayrollRun()" class="bg-indigo-600 hover:bg-indigo-500 text-xs py-1 px-2 rounded text-white font-semibold">POST Payout</button>
+              <button onclick="generateBankBatches()" class="bg-violet-600 hover:bg-violet-500 text-xs py-1 px-2 rounded text-white font-semibold">Build Bank Batch</button>
+            </div>
+            <div class="border-t border-slate-700 pt-2 grid grid-cols-2 gap-2">
+              <button onclick="downloadCSV('/api/v1/payroll/runs/' + getRunId() + '/export.csv')" class="bg-slate-700 hover:bg-slate-600 text-[11px] py-1 px-1 rounded truncate">📄 Export Ledger CSV</button>
+              <button onclick="downloadCSV('/api/v1/payroll/runs/' + getRunId() + '/bank-statement.csv')" class="bg-slate-700 hover:bg-slate-600 text-[11px] py-1 px-1 rounded truncate">🏛️ Bank Statement CSV</button>
+            </div>
+            <div>
+              <div class="grid grid-cols-3 gap-1">
+                <input type="text" id="payslipUserId" placeholder="Employee UUID" class="bg-slate-950 text-[11px] border border-slate-700 rounded p-1 col-span-2 focus:outline-none" />
+                <button onclick="fetchPayslip()" class="bg-slate-700 hover:bg-slate-600 text-[11px] py-1 px-1 rounded">View Payslip</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bank Routing / Settlement Setup -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/bank/accounts</h3>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/bank/accounts')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Configure banking routes for employee settlement.</p>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/bank/accounts', 'POST')" class="space-y-2 mt-3">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">User ID</label>
+                  <input type="text" name="user_id" placeholder="uuid-xxxx-xxxx" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Financial Institution</label>
+                  <input type="text" name="bank_name" value="ABA Bank" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Account Number</label>
+                  <input type="text" name="account_number" value="123456789" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Beneficiary Name</label>
+                  <input type="text" name="account_name" value="John Doe" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Bind Bank Details</button>
+            </form>
+          </div>
+
+          <!-- Batches Panel -->
+          <div class="border-t border-slate-700 pt-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="bg-indigo-900/40 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded">GET</span>
+                <span class="font-semibold text-xs text-slate-300 ml-1">/api/v1/bank/batches</span>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/bank/batches')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET Batches →</button>
+            </div>
+            
+            <div class="mt-3">
+              <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+              <span class="font-semibold text-xs text-slate-300 ml-1">/api/v1/bank/batches/{id}/mark-submitted</span>
+              <div class="flex gap-1 mt-2">
+                <input type="number" id="bankBatchSubId" placeholder="Batch ID" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 w-full focus:outline-none" />
+                <button onclick="markBankBatchSubmitted()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded whitespace-nowrap">Mark Sent</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. INTEGRATIONS & REPORTS -->
+      <div id="ewa-section" class="tab-pane hidden space-y-4">
+        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">⚡ Integrations & Reports</h2>
+
+        <!-- Earned Wage Access -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
+          <div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/ewa/requests</h3>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/ewa/requests')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET Requests →</button>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Submit micro-draw EWA requests against accrued earnings.</p>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/ewa/requests', 'POST')" class="space-y-2 mt-3">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Draw Request Amount ($)</label>
+                  <input type="number" name="amount" value="50" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Withdrawal Reason</label>
+                  <input type="text" name="reason" value="Emergency medicine" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Initiate Draw</button>
+            </form>
+          </div>
+
+          <div class="border-t border-slate-700 pt-3">
+            <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
+            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/ewa/requests/{id}/approve</h3>
+            <form onsubmit="handleEWAApprove(event)" class="space-y-2 mt-2">
+              <div class="grid grid-cols-3 gap-2">
+                <div class="col-span-2">
+                  <label class="block text-[10px] text-slate-400">Request ID (Numeric)</label>
+                  <input type="number" id="ewaAppId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Action Status</label>
+                  <select id="ewaAppStatus" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="approved">Approve</option>
+                    <option value="rejected">Reject</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Process Decision</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Biometric Webhook Event Simulator -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
+          <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded mb-2 inline-block">POST</span>
+          <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/devices/face-events</h3>
+          <p class="text-xs text-slate-400 mb-3">Simulates a webhook request generated by an integrated biometric gateway device.</p>
+          <form onsubmit="handleWebhookSimulate(event)" class="space-y-2">
+            <div>
+              <label class="block text-[10px] text-slate-400 font-semibold uppercase">X-Device-Secret Key</label>
+              <input type="text" id="webhookSecret" value="TEST_WEBHOOK_SECRET_KEY" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none font-mono" required />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-400">Device Hardware ID</label>
+                <input type="text" id="webhookDeviceId" value="DEV-9988" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">Biometric Enroll ID</label>
+                <input type="text" id="webhookFaceId" value="12345" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+            </div>
+            <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold py-1.5 rounded transition-colors">Dispatch Event</button>
+          </form>
+        </div>
+
+        <!-- System Intelligence Reporting -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-3">
+          <h3 class="font-bold text-xs text-slate-400 uppercase tracking-wide">Reporting Intelligence</h3>
+          
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] text-slate-400">Period Interval</label>
+              <select id="reportPeriod" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-400">Target Anchor Date</label>
+              <input type="date" id="reportDate" value="2026-06-05" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-3 gap-1 pt-1">
+            <button onclick="fetchSummaryReport()" class="bg-slate-700 hover:bg-slate-600 text-[11px] py-1 px-1 rounded truncate text-slate-300">GET Summary</button>
+            <button onclick="fetchInsightsReport()" class="bg-slate-700 hover:bg-slate-600 text-[11px] py-1 px-1 rounded truncate text-slate-300">GET Insights</button>
+            <button onclick="triggerTelegramDaily()" class="bg-indigo-600 hover:bg-indigo-500 text-[11px] py-1 px-1 rounded truncate text-white">✈️ Telegram</button>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- LIVE CONSOLE (RIGHT COLUMN) -->
+    <section class="lg:col-span-4 flex flex-col gap-4">
+      <div class="bg-slate-950 border border-slate-800 rounded-lg p-4 flex flex-col h-[750px] sticky top-28 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+          <h2 class="text-xs font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
+            <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span>
+            Interactive Console Log
+          </h2>
+          <button onclick="clearConsole()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white px-2 py-1 rounded transition-colors">Clear Output</button>
+        </div>
+
+        <!-- Terminal Output -->
+        <div id="consoleOutput" class="flex-1 overflow-y-auto font-mono text-xs space-y-4 pr-1 leading-relaxed">
+          <div class="text-slate-500 italic">API action logs, network headers, response status values, and structured JSON return data will render dynamically inside this panel. Ready for testing.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="bg-slate-950 border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-500 mt-auto">
+    <p>API Test Suite Console. Direct request framework. All security variables and sessions are temporarily managed locally in-memory.</p>
+  </footer>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // System Initialization & Configurations
+    document.addEventListener("DOMContentLoaded", () => {
+      const cachedToken = localStorage.getItem("api_token");
+      if (cachedToken) {
+        document.getElementById("tokenInput").value = cachedToken;
+      }
+      checkHealth();
+    });
+
+    // Navigation Tab Switching Logic
+    function switchTab(activeTabId) {
+      document.querySelectorAll(".tab-pane").forEach(pane => {
+        pane.classList.add("hidden");
+      });
+      document.getElementById(activeTabId).classList.remove("hidden");
+
+      // Update Tab CSS
+      document.querySelectorAll("#navTabs button").forEach(btn => {
+        btn.classList.remove("bg-indigo-600", "text-white");
+        btn.classList.add("text-slate-300", "hover:bg-slate-700", "hover:text-white");
+      });
+
+      // Target active tab
+      const clickedBtn = Array.from(document.querySelectorAll("#navTabs button")).find(btn => 
+        btn.getAttribute("onclick").includes(activeTabId)
+      );
+      if (clickedBtn) {
+        clickedBtn.classList.remove("text-slate-300", "hover:bg-slate-700", "hover:text-white");
+        clickedBtn.classList.add("bg-indigo-600", "text-white");
+      }
+    }
+
+    // Capture Local Coordinates via Geolocation Helper
+    function getLocation() {
+      if (navigator.geolocation) {
+        logToConsole("Requesting physical browser coordinate data...", "SYSTEM");
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            logToConsole(`Fetched Coordinates: Lat ${lat}, Lng ${lng}`, "SUCCESS");
+            
+            // Populating geolocation inputs
+            document.querySelectorAll(".gps-lat").forEach(el => el.value = lat.toFixed(6));
+            document.querySelectorAll(".gps-lng").forEach(el => el.value = lng.toFixed(6));
+          },
+          (error) => {
+            logToConsole(`Geolocation rejected or inaccessible: ${error.message}. Resorting to defaults.`, "ERROR");
+          }
+        );
+      } else {
+        logToConsole("Browser context does not present geolocation features.", "ERROR");
+      }
+    }
+
+    // Core Request Engine
+    async function makeRequest(path, method = "GET", bodyPayload = null, extraHeaders = {}) {
+      const baseUrl = document.getElementById("baseUrlInput").value.replace(/\/$/, "");
+      const token = document.getElementById("tokenInput").value.trim();
+      const targetUrl = `${baseUrl}${path}`;
+
+      const headers = {
+        "Content-Type": "application/json",
+        ...extraHeaders
+      };
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const options = {
+        method,
+        headers
+      };
+
+      if (bodyPayload && (method === "POST" || method === "PUT" || method === "PATCH")) {
+        options.body = JSON.stringify(bodyPayload);
+      }
+
+      const startTime = performance.now();
+      logToConsole(`Initiating Network Request: ${method} ${targetUrl}`, "TX");
+      if (bodyPayload) {
+        logToConsole(`Payload: ${JSON.stringify(bodyPayload, null, 2)}`, "BODY");
+      }
+
+      try {
+        const response = await fetch(targetUrl, options);
+        const duration = (performance.now() - startTime).toFixed(1);
+        const isJson = response.headers.get("content-type")?.includes("application/json");
+        
+        // Handle stream-based exports (like CSVs)
+        const disposition = response.headers.get("Content-Disposition");
+        if (disposition && disposition.includes("attachment")) {
+          const blob = await response.blob();
+          logToConsole(`Received Binary Stream: [Status ${response.status}] [Duration: ${duration}ms]`, "RX");
+          return { response, blob, isFile: true, status: response.status };
+        }
+
+        const data = isJson ? await response.json() : await response.text();
+        
+        if (response.ok) {
+          logToConsole(`Succeeded Process: [Status ${response.status}] [Duration: ${duration}ms]`, "RX");
+          logToConsole(JSON.stringify(data, null, 2), "DATA");
+          return { data, status: response.status, ok: true };
+        } else {
+          logToConsole(`Failed Process: [Status ${response.status}] [Duration: ${duration}ms]`, "ERROR");
+          logToConsole(typeof data === 'object' ? JSON.stringify(data, null, 2) : data, "ERROR_BODY");
+          return { data, status: response.status, ok: false };
+        }
+      } catch (err) {
+        logToConsole(`Network Request Error: ${err.message}`, "ERROR");
+        return { error: err.message, ok: false };
+      }
+    }
+
+    // Logger Engine UI Handler
+    function logToConsole(message, type = "INFO") {
+      const consoleOutput = document.getElementById("consoleOutput");
+      const block = document.createElement("div");
+      block.className = "p-2 rounded border text-xs leading-5 break-words ";
+
+      // Set thematic colors based on action type
+      switch (type) {
+        case "TX":
+          block.className += "bg-slate-900 border-slate-700 text-slate-300 font-bold";
+          block.innerHTML = `<span>⚡</span> [OUT] ${message}`;
+          break;
+        case "RX":
+          block.className += "bg-indigo-950 border-indigo-900/40 text-indigo-300 font-bold";
+          block.innerHTML = `<span>📡</span> [IN] ${message}`;
+          break;
+        case "BODY":
+        case "DATA":
+          block.className += "bg-slate-950 border-slate-900 text-teal-400 font-mono whitespace-pre-wrap overflow-x-auto";
+          block.innerText = message;
+          break;
+        case "ERROR":
+          block.className += "bg-rose-950/40 border-rose-900 text-rose-300 font-semibold";
+          block.innerHTML = `<span>🚨</span> [FAIL] ${message}`;
+          break;
+        case "ERROR_BODY":
+          block.className += "bg-rose-950/50 border-rose-900 text-rose-400 font-mono whitespace-pre-wrap overflow-x-auto";
+          block.innerText = message;
+          break;
+        case "SUCCESS":
+          block.className += "bg-emerald-950/40 border-emerald-900 text-emerald-300 font-semibold";
+          block.innerHTML = `<span>🟢</span> [SUCCESS] ${message}`;
+          break;
+        default:
+          block.className += "bg-slate-900 border-slate-800 text-slate-400";
+          block.innerText = message;
+      }
+
+      consoleOutput.appendChild(block);
+      consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    }
+
+    function clearConsole() {
+      document.getElementById("consoleOutput").innerHTML = `<div class="text-slate-500 italic">Terminal logs cleared. Ready for next activity execution.</div>`;
+    }
+
+    function clearToken() {
+      document.getElementById("tokenInput").value = "";
+      localStorage.removeItem("api_token");
+      logToConsole("JWT Token cleared.", "SYSTEM");
+    }
+
+    // Verify Server Health Setup
+    async function checkHealth() {
+      const result = await makeRequest("/health", "GET");
+      const healthBadge = document.getElementById("healthBadge");
+      if (result.ok) {
+        healthBadge.innerText = "Online";
+        healthBadge.className = "text-emerald-400 font-semibold";
+      } else {
+        healthBadge.innerText = "Offline";
+        healthBadge.className = "text-rose-400 font-semibold";
+      }
+    }
+
+    // Dynamic Generic Form Processor helper
+    async function handleFormSubmit(event, path, method) {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      const payload = {};
+      formData.forEach((value, key) => {
+        // Parse numerical values to ensure valid payload formats
+        if (key === "branch_id" || key === "department_id" || key === "radius_m" || key === "ttl_seconds" || key === "customer_id") {
+          payload[key] = parseInt(value, 10);
+        } else if (key === "lat" || key === "lng" || key === "gps_accuracy_m" || key === "face_score" || key === "hours" || key === "amount" || key === "daily_rate" || key === "tax_rate" || key === "insurance_rate" || key === "target_visits" || key === "target_revenue") {
+          payload[key] = parseFloat(value);
+        } else {
+          payload[key] = value;
+        }
+      });
+
+      const res = await makeRequest(path, method, payload);
+      
+      // Auto-save Token dynamically during initialization or setup sequences
+      if (res.ok && res.data && (res.data.token || res.data.access_token)) {
+        const token = res.data.token || res.data.access_token;
+        document.getElementById("tokenInput").value = token;
+        localStorage.setItem("api_token", token);
+        logToConsole("Dynamic context update: Authorization Session Bound.", "SUCCESS");
+      }
+    }
+
+    // Auth Login Handler 
+    async function handleLoginSubmit(event) {
+      event.preventDefault();
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+      const res = await makeRequest("/api/v1/auth/login", "POST", { email, password });
+      
+      if (res.ok && res.data && (res.data.token || res.data.access_token)) {
+        const token = res.data.token || res.data.access_token;
+        document.getElementById("tokenInput").value = token;
+        localStorage.setItem("api_token", token);
+        logToConsole("Session authorization established.", "SUCCESS");
+      }
+    }
+
+    // Simple GET helper
+    function handleGetRequest(path) {
+      makeRequest(path, "GET");
+    }
+
+    // Dynamic profile check
+    function fetchMe() {
+      makeRequest("/api/v1/me", "GET");
+    }
+
+    // Search query builders
+    function handleEmployeeSearch(event) {
+      event.preventDefault();
+      const q = document.getElementById("empSearchQ").value;
+      const limit = document.getElementById("empSearchLimit").value;
+      const queryParams = new URLSearchParams();
+      if (q) queryParams.append("q", q);
+      if (limit) queryParams.append("limit", limit);
+      makeRequest(`/api/v1/employees?${queryParams.toString()}`, "GET");
+    }
+
+    // Profile updates
+    function handleEmployeePatch(event) {
+      event.preventDefault();
+      const empId = document.getElementById("patchEmpId").value.trim();
+      const name = document.getElementById("patchEmpName").value.trim();
+      const role = document.getElementById("patchEmpRole").value;
+
+      const body = {};
+      if (name) body.name = name;
+      if (role) body.role = role;
+
+      if (!empId) {
+        logToConsole("Requires a valid target User ID", "ERROR");
+        return;
+      }
+      makeRequest(`/api/v1/employees/${empId}`, "PATCH", body);
+    }
+
+    // Active Day clock searches
+    function fetchTodayAttendance() {
+      const date = document.getElementById("attTodayDate").value;
+      makeRequest(`/api/v1/attendance/today?date=${date}`, "GET");
+    }
+
+    // Log range query configurations
+    function fetchSessionsAttendance() {
+      const from = document.getElementById("attSessFrom").value;
+      const to = document.getElementById("attSessTo").value;
+      const userId = document.getElementById("attSessUser").value.trim();
+      let path = `/api/v1/attendance/sessions?from=${from}&to=${to}`;
+      if (userId) path += `&user_id=${userId}`;
+      makeRequest(path, "GET");
+    }
+
+    // Flow Approval logic
+    function handleLeaveApprove(event) {
+      event.preventDefault();
+      const id = document.getElementById("leaveAppId").value;
+      const status = document.getElementById("leaveAppStatus").value;
+      makeRequest(`/api/v1/leave/requests/${id}/approve`, "PATCH", { status });
+    }
+
+    function handleOvertimeApprove(event) {
+      event.preventDefault();
+      const id = document.getElementById("otAppId").value;
+      const status = document.getElementById("otAppStatus").value;
+      makeRequest(`/api/v1/overtime/requests/${id}/approve`, "PATCH", { status });
+    }
+
+    // Checkout processing logic
+    function handleSalesCheckout(event) {
+      event.preventDefault();
+      const id = document.getElementById("visitCheckoutId").value;
+      const lat = parseFloat(document.getElementById("visitCheckoutLat").value);
+      const lng = parseFloat(document.getElementById("visitCheckoutLng").value);
+      const notes = document.getElementById("visitCheckoutNotes").value;
+      makeRequest(`/api/v1/sales/visits/${id}/checkout`, "PATCH", { lat, lng, notes });
+    }
+
+    function handleFetchVisits() {
+      makeRequest("/api/v1/sales/visits?from=2026-06-01&to=2026-06-30", "GET");
+    }
+
+    function fetchSalesSummary() {
+      const date = document.getElementById("salesSumDate").value;
+      makeRequest(`/api/v1/sales/summary?date=${date}`, "GET");
+    }
+
+    function postSalesTelegram() {
+      const date = document.getElementById("salesSumDate").value;
+      makeRequest(`/api/v1/sales/summary/telegram?date=${date}`, "POST");
+    }
+
+    function fetchKPIs() {
+      makeRequest("/api/v1/kpis?month=2026-06", "GET");
+    }
+
+    // Payroll helper options
+    function getRunId() {
+      const runId = document.getElementById("payrollRunId").value;
+      if (!runId) {
+        logToConsole("Please enter a Target Payroll Run ID", "ERROR");
+        return "1"; // Default fall-through 
+      }
+      return runId;
+    }
+
+    function getPayrollRunDetails() {
+      makeRequest(`/api/v1/payroll/runs/${getRunId()}`, "GET");
+    }
+
+    function approvePayrollRun() {
+      makeRequest(`/api/v1/payroll/runs/${getRunId()}/approve`, "POST");
+    }
+
+    // Trigger payout export
+    function payoutPayrollRun() {
+      makeRequest(`/api/v1/payroll/runs/${getRunId()}/payout-export`, "POST");
+    }
+
+    function generateBankBatches() {
+      makeRequest(`/api/v1/payroll/runs/${getRunId()}/bank-batches`, "POST", { bank_name: "ABA Bank" });
+    }
+
+    function fetchPayslip() {
+      const userId = document.getElementById("payslipUserId").value.trim();
+      if (!userId) {
+        logToConsole("Must input a Target Employee UUID", "ERROR");
+        return;
+      }
+      makeRequest(`/api/v1/payroll/runs/${getRunId()}/payslips/${userId}`, "GET");
+    }
+
+    async function downloadCSV(path) {
+      const res = await makeRequest(path, "GET");
+      if (res.isFile && res.blob) {
+        const downloadUrl = window.URL.createObjectURL(res.blob);
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.setAttribute("download", path.split("/").pop());
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+        logToConsole("Browser File Download Initiated.", "SUCCESS");
+      }
+    }
+
+    function markBankBatchSubmitted() {
+      const id = document.getElementById("bankBatchSubId").value;
+      if (!id) {
+        logToConsole("Provide a Batch ID", "ERROR");
+        return;
+      }
+      makeRequest(`/api/v1/bank/batches/${id}/mark-submitted`, "POST");
+    }
+
+    function handleEWAApprove(event) {
+      event.preventDefault();
+      const id = document.getElementById("ewaAppId").value;
+      const status = document.getElementById("ewaAppStatus").value;
+      makeRequest(`/api/v1/ewa/requests/${id}/approve`, "PATCH", { status });
+    }
+
+    // Simulates an API hardware Event Post 
+    function handleWebhookSimulate(event) {
+      event.preventDefault();
+      const secret = document.getElementById("webhookSecret").value;
+      const deviceId = document.getElementById("webhookDeviceId").value;
+      const faceId = document.getElementById("webhookFaceId").value;
+      const timestamp = new Date().toISOString();
+
+      const payload = {
+        device_id: deviceId,
+        face_id: faceId,
+        timestamp: timestamp
+      };
+
+      makeRequest("/api/v1/devices/face-events", "POST", payload, {
+        "X-Device-Secret": secret
+      });
+    }
+
+    // Reports Execution Handlers
+    function fetchSummaryReport() {
+      const period = document.getElementById("reportPeriod").value;
+      const date = document.getElementById("reportDate").value;
+      makeRequest(`/api/v1/reports/summary?period=${period}&date=${date}`, "GET");
+    }
+
+    function fetchInsightsReport() {
+      const period = document.getElementById("reportPeriod").value;
+      const date = document.getElementById("reportDate").value;
+      makeRequest(`/api/v1/reports/insights?period=${period}&date=${date}`, "GET");
+    }
+
+    function triggerTelegramDaily() {
+      const date = document.getElementById("reportDate").value;
+      makeRequest(`/api/v1/reports/telegram-daily?date=${date}`, "POST");
+    }
+  </script>
+</body>
+</html>
