@@ -230,9 +230,11 @@
 
         <div class="card">
           <h2>QR Camera Scanner</h2>
-          <p class="small muted">Uses browser BarcodeDetector when supported. HTTPS required on most browsers.</p>
+          <p class="small muted">Works with BarcodeDetector when available. If your browser does not support it, this page auto-loads jsQR fallback. HTTPS or localhost is required for camera access.</p>
           <video id="qrVideo" playsinline muted></video>
+          <canvas id="qrCanvas" class="hidden"></canvas>
           <div class="btns"><button class="primary" onclick="startQRScanner()">Start Camera Scan</button><button class="danger" onclick="stopQRScanner()">Stop</button></div>
+          <label>Decode QR From Image</label><input id="qrImageUpload" type="file" accept="image/*" onchange="decodeQRImageFile(this.files && this.files[0])" />
           <pre id="scanLog" class="log" style="margin-top:12px"></pre>
         </div>
       </div>
@@ -495,27 +497,128 @@ async function faceScanClock(){
 async function getAttendanceToday(){ return run('clockLog',()=>api('GET','/api/v1/attendance/today')); }
 async function getSessions(){ return run('clockLog',()=>api('GET','/api/v1/attendance/sessions?limit=50&offset=0')); }
 
+let jsQRLoadPromise = null;
+function normalizeScannedQRValue(raw){
+  const value = String(raw || '').trim();
+  if(!value) return '';
+  // Support QR content as JSON: {"token":"..."}, {"qr_token":"..."}
+  try{
+    const obj = JSON.parse(value);
+    const token = obj.token || obj.qr_token || obj.qrToken || obj.qr_content || obj.value;
+    if(token) return String(token).trim();
+  }catch(_){ }
+  // Support QR content as URL: https://app/checkin?token=... or ?qr_token=...
+  try{
+    const url = new URL(value);
+    const token = url.searchParams.get('qr_token') || url.searchParams.get('token') || url.searchParams.get('t');
+    if(token) return token.trim();
+  }catch(_){ }
+  return value;
+}
+function setQRTokenFromScan(raw, logId){
+  const token = normalizeScannedQRValue(raw);
+  if(!token){ writeLog(logId,{ok:false,error:'QR detected but token was empty'}); return false; }
+  $('clockQrToken').value = token;
+  $('clockSource').value = 'qr';
+  writeLog(logId,{ok:true,message:'QR detected and copied to QR Token field',raw_value:String(raw || ''),token});
+  return true;
+}
+function loadJsQR(){
+  if(window.jsQR) return Promise.resolve(window.jsQR);
+  if(jsQRLoadPromise) return jsQRLoadPromise;
+  const urls = [
+    'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
+    'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js'
+  ];
+  jsQRLoadPromise = new Promise((resolve,reject)=>{
+    let i = 0;
+    const next = () => {
+      if(i >= urls.length) return reject(new Error('jsQR fallback could not be loaded. Check internet connection or paste token manually.'));
+      const s = document.createElement('script');
+      s.src = urls[i++];
+      s.async = true;
+      s.onload = () => window.jsQR ? resolve(window.jsQR) : next();
+      s.onerror = next;
+      document.head.appendChild(s);
+    };
+    next();
+  });
+  return jsQRLoadPromise;
+}
+function decodeQRFromCanvas(videoOrImage){
+  const canvas = $('qrCanvas');
+  const w = videoOrImage.videoWidth || videoOrImage.naturalWidth || videoOrImage.width;
+  const h = videoOrImage.videoHeight || videoOrImage.naturalHeight || videoOrImage.height;
+  if(!w || !h || !window.jsQR) return '';
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d', {willReadFrequently:true});
+  ctx.drawImage(videoOrImage, 0, 0, w, h);
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const code = window.jsQR(imageData.data, imageData.width, imageData.height, {inversionAttempts:'attemptBoth'});
+  return code && code.data ? code.data : '';
+}
 async function startQRScanner(){
   const logId='scanLog';
-  if(!('BarcodeDetector' in window)){ writeLog(logId,{ok:false,error:'BarcodeDetector is not supported in this browser. Use Chrome/Edge Android or paste token manually.'}); return; }
   try{
-    const detector = new BarcodeDetector({formats:['qr_code']});
-    state.scannerStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    const video=$('qrVideo'); video.srcObject=state.scannerStream; await video.play();
-    writeLog(logId,{ok:true,message:'Scanning...'});
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      writeLog(logId,{ok:false,error:'Camera API is not available in this browser. Upload QR image or paste token manually.'});
+      return;
+    }
+    const hasBarcodeDetector = 'BarcodeDetector' in window;
+    let detector = null;
+    if(hasBarcodeDetector){
+      try{ detector = new BarcodeDetector({formats:['qr_code']}); }catch(_){ detector = null; }
+    }
+    if(!detector){
+      writeLog(logId,{ok:true,message:'BarcodeDetector not supported. Loading jsQR fallback...'});
+      await loadJsQR();
+    }
+    state.scannerStream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}},
+      audio:false
+    });
+    const video=$('qrVideo');
+    video.srcObject=state.scannerStream;
+    await video.play();
+    writeLog(logId,{ok:true,message:detector ? 'Scanning with BarcodeDetector...' : 'Scanning with jsQR fallback...'});
+    if(state.scannerTimer){ clearInterval(state.scannerTimer); }
     state.scannerTimer = setInterval(async()=>{
       try{
-        const codes = await detector.detect(video);
-        if(codes.length){
-          const value = codes[0].rawValue || '';
-          $('clockQrToken').value = value;
-          $('clockSource').value = 'qr';
-          writeLog(logId,{ok:true,message:'QR detected and copied to QR Token field',value});
-          stopQRScanner();
+        let value = '';
+        if(detector){
+          const codes = await detector.detect(video);
+          if(codes.length) value = codes[0].rawValue || '';
+        }else{
+          value = decodeQRFromCanvas(video);
         }
+        if(value && setQRTokenFromScan(value, logId)) stopQRScanner();
       }catch(e){ console.warn(e); }
-    },700);
-  }catch(e){ writeLog(logId,{ok:false,error:e.message}); }
+    },450);
+  }catch(e){
+    writeLog(logId,{ok:false,error:e.message || String(e),hint:'Use HTTPS/localhost for camera access, or upload QR image/paste token manually.'});
+    stopQRScanner();
+  }
+}
+async function decodeQRImageFile(file){
+  const logId='scanLog';
+  if(!file){ return; }
+  try{
+    if(!window.jsQR){
+      writeLog(logId,{ok:true,message:'Loading jsQR fallback for image decode...'});
+      await loadJsQR();
+    }
+    const img = new Image();
+    img.onload = () => {
+      try{
+        const value = decodeQRFromCanvas(img);
+        if(value) setQRTokenFromScan(value, logId);
+        else writeLog(logId,{ok:false,error:'No QR code found in uploaded image. Try a clearer image.'});
+        URL.revokeObjectURL(img.src);
+      }catch(e){ writeLog(logId,{ok:false,error:e.message || String(e)}); }
+    };
+    img.onerror = () => writeLog(logId,{ok:false,error:'Could not read uploaded image.'});
+    img.src = URL.createObjectURL(file);
+  }catch(e){ writeLog(logId,{ok:false,error:e.message || String(e)}); }
 }
 function stopQRScanner(){
   if(state.scannerTimer){ clearInterval(state.scannerTimer); state.scannerTimer=null; }
