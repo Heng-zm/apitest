@@ -1,1537 +1,565 @@
-<!DOCTYPE html>
-<html lang="km">
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Checkin-Me Portal with QR Generator</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- HTML5 QR Code CDN Scanner Library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CheckinMe API Test Frontend</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;600;700&display=swap');
-    body {
-      font-family: 'Kantumruy Pro', sans-serif;
+    :root{
+      --bg:#0b1020;--panel:#11182d;--panel2:#16203b;--muted:#8ea0c0;--text:#eef4ff;--line:#283656;--accent:#6ee7b7;--accent2:#60a5fa;--danger:#fb7185;--warn:#fbbf24;--ok:#34d399;--shadow:0 16px 50px rgba(0,0,0,.35);--radius:18px;
     }
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #0f172a;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 3px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #475569;
-    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:radial-gradient(circle at top left,#18345f 0,#0b1020 35%,#070b16 100%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.4}
+    button,input,select,textarea{font:inherit}
+    a{color:var(--accent2)}
+    .wrap{max-width:1280px;margin:0 auto;padding:22px}
+    .hero{display:grid;gap:16px;grid-template-columns:1fr;align-items:center;margin-bottom:18px}
+    .title{font-size:clamp(26px,4vw,44px);font-weight:900;letter-spacing:-.04em;margin:0}
+    .sub{color:var(--muted);margin:5px 0 0;font-size:15px}
+    .topbar{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;background:rgba(17,24,45,.78);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;backdrop-filter:blur(12px)}
+    .apirow{display:grid;grid-template-columns:1fr auto auto;gap:10px}
+    .grid{display:grid;gap:14px}
+    .two{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .three{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .four{grid-template-columns:repeat(4,minmax(0,1fr))}
+    @media (max-width:900px){.two,.three,.four{grid-template-columns:1fr}.apirow{grid-template-columns:1fr}.topbar{grid-template-columns:1fr}.tabs{overflow:auto}.tabbtn{white-space:nowrap}}
+    .card{background:linear-gradient(180deg,rgba(22,32,59,.95),rgba(17,24,45,.95));border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+    .card h2,.card h3{margin:0 0 12px}.card h2{font-size:22px}.card h3{font-size:18px}
+    label{display:block;font-size:12px;text-transform:uppercase;color:#a6b7d8;font-weight:800;letter-spacing:.06em;margin:8px 0 6px}
+    input,select,textarea{width:100%;border:1px solid #33456d;background:#0c1325;color:var(--text);border-radius:12px;padding:11px 12px;outline:none}
+    input:focus,select:focus,textarea:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(96,165,250,.15)}
+    textarea{min-height:94px;resize:vertical}
+    .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+    button,.btn{border:0;border-radius:12px;padding:10px 14px;font-weight:850;cursor:pointer;background:#253453;color:var(--text);transition:.15s transform,.15s opacity,.15s background;text-decoration:none;display:inline-flex;align-items:center;gap:7px}
+    button:hover,.btn:hover{transform:translateY(-1px);background:#32466f}button:active{transform:translateY(0)}button:disabled{opacity:.55;cursor:not-allowed}
+    .primary{background:linear-gradient(135deg,#2563eb,#06b6d4)}.primary:hover{background:linear-gradient(135deg,#1d4ed8,#0891b2)}
+    .success{background:linear-gradient(135deg,#059669,#10b981)}.danger{background:linear-gradient(135deg,#be123c,#fb7185)}.warn{background:linear-gradient(135deg,#b45309,#f59e0b)}.ghost{background:transparent;border:1px solid var(--line)}
+    .tabs{display:flex;gap:8px;margin:18px 0}.tabbtn{background:#121b33;border:1px solid var(--line)}.tabbtn.active{background:linear-gradient(135deg,#2563eb,#7c3aed);border-color:transparent}
+    .tab{display:none}.tab.active{display:block}
+    .pill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:#0d1428;border-radius:999px;padding:6px 10px;color:#b9c8e7;font-size:13px}
+    .statusbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ok{color:var(--ok)}.bad{color:var(--danger)}.muted{color:var(--muted)}.small{font-size:13px}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    pre{margin:0;white-space:pre-wrap;word-break:break-word;background:#070b16;border:1px solid var(--line);border-radius:14px;padding:12px;max-height:360px;overflow:auto;color:#d9e6ff}.log{min-height:130px}
+    table{width:100%;border-collapse:collapse;background:#0c1325;border-radius:14px;overflow:hidden}th,td{border-bottom:1px solid #22314e;padding:9px;text-align:left;font-size:13px;vertical-align:top}th{color:#a6b7d8;background:#111b32}tr:hover td{background:#111a31}
+    .qrbox{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start}.qrimg{background:white;padding:12px;border-radius:16px;width:100%;max-width:260px;min-height:260px;display:flex;align-items:center;justify-content:center}.qrimg img{width:100%;height:auto;display:block}.qrimg span{color:#334155;text-align:center}
+    @media(max-width:700px){.qrbox{grid-template-columns:1fr}.qrimg{max-width:none}}
+    video{width:100%;border-radius:16px;background:#000;border:1px solid var(--line)}
+    .notice{border-left:4px solid var(--accent2);background:rgba(96,165,250,.1);padding:10px 12px;border-radius:12px;color:#cfe4ff}.notice.warnn{border-left-color:var(--warn);background:rgba(251,191,36,.1);color:#fff1c6}.notice.dang{border-left-color:var(--danger);background:rgba(251,113,133,.1);color:#ffe0e6}
+    .hidden{display:none!important}
   </style>
 </head>
-<body class="bg-slate-950 bg-slate-900 text-slate-100 min-h-screen flex flex-col">
-
-  <!-- TOP HEADER -->
-  <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 sticky top-0 z-50 shadow-md">
-    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<body>
+  <div class="wrap">
+    <div class="hero">
       <div>
-        <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-          <span>🛠️ Checkin-Me Portal</span>
-          <span class="text-xs font-normal bg-indigo-600/30 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">QR Code Live Engine</span>
-        </h1>
-        <p class="text-xs text-slate-400">ប្រព័ន្ធគ្រប់គ្រងវត្តមាន បុគ្គលិក និងបើកប្រាក់បៀវត្សរ៍ (Interactive Playground)</p>
+        <h1 class="title">CheckinMe API Test Frontend</h1>
+        <p class="sub">Single-file HTML + JavaScript tester for owner/admin and normal employee workflows.</p>
       </div>
-
-      <!-- WORKSPACE SWITCHER -->
-      <div class="bg-slate-950 p-1 rounded-lg border border-slate-700 flex gap-1 self-center">
-        <button id="btnEmpWorkspace" onclick="toggleWorkspace('employee')" class="px-4 py-1.5 rounded text-xs font-semibold transition-all bg-indigo-600 text-white">
-          🧑‍💼 ផ្នែកបុគ្គលិក / Employee
-        </button>
-        <button id="btnAdminWorkspace" onclick="toggleWorkspace('admin')" class="px-4 py-1.5 rounded text-xs font-semibold transition-all text-slate-400 hover:text-white">
-          🔑 ផ្នែកគ្រប់គ្រង / Admin-HR
-        </button>
-      </div>
-
-      <!-- Server & Auth Status -->
-      <div class="flex flex-wrap items-center gap-3">
-        <div class="flex flex-col">
-          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Base URL</label>
-          <input id="baseUrlInput" type="text" value="https://checkin-me.onrender.com" 
-                 class="bg-slate-950 text-slate-200 border border-slate-700 rounded px-3 py-1 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none w-48" />
-        </div>
-
-        <div class="flex flex-col">
-          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">JWT Token</label>
-          <div class="relative flex items-center">
-            <input id="tokenInput" type="text" placeholder="No active session" 
-                   class="bg-slate-950 text-slate-200 border border-slate-700 rounded-l px-3 py-1 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none w-48 truncate" />
-            <button onclick="clearToken()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 border-y border-r border-slate-700 hover:text-white px-2 py-1 text-xs rounded-r transition-colors">Clear</button>
+      <div class="topbar">
+        <div>
+          <label>API Base URL</label>
+          <div class="apirow">
+            <input id="baseUrl" placeholder="https://your-render-url.onrender.com" />
+            <button class="primary" onclick="saveBaseUrl()">Save URL</button>
+            <button onclick="healthCheck()">Health</button>
+          </div>
+          <div class="statusbar">
+            <span class="pill">Token: <b id="tokenStatus">not logged in</b></span>
+            <span class="pill">Role: <b id="roleStatus">-</b></span>
+            <span class="pill">User: <b id="userStatus">-</b></span>
           </div>
         </div>
-
-        <div class="flex gap-1 self-end">
-          <button onclick="fetchMe()" class="bg-indigo-600/80 hover:bg-indigo-500 text-white font-semibold px-3 py-1 rounded text-xs transition-all shadow-sm">
-            Fetch /me
-          </button>
-          <button onclick="getLocation()" class="bg-teal-600 hover:bg-teal-500 text-white font-semibold px-3 py-1 rounded text-xs transition-all shadow-sm" title="Get GPS coordinates">
-            📍 GPS
-          </button>
+        <div class="btns" style="margin:0">
+          <button class="ghost" onclick="loadMe()">Refresh Me</button>
+          <button class="danger" onclick="logout()">Logout</button>
         </div>
       </div>
     </div>
-  </header>
 
-  <!-- MAIN WORKSPACE -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-    
-    <!-- LEFT SIDEBAR: NAVIGATION -->
-    <section class="lg:col-span-3 flex flex-col gap-2">
-      <!-- Shared System Status -->
-      <div class="bg-slate-800 border border-slate-700 rounded-lg p-3 mb-2 text-xs text-slate-400 flex items-center justify-between">
-        <span class="flex items-center gap-1">Status: <span id="healthBadge" class="text-slate-500 font-semibold">Unknown</span></span>
-        <button onclick="checkHealth()" class="bg-slate-700 hover:bg-slate-600 text-[10px] text-slate-300 px-2 py-0.5 rounded">Check</button>
-      </div>
+    <div class="tabs">
+      <button class="tabbtn active" data-tab="auth" onclick="showTab('auth')">Setup / Login</button>
+      <button class="tabbtn" data-tab="owner" onclick="showTab('owner')">Owner / Admin Page</button>
+      <button class="tabbtn" data-tab="employee" onclick="showTab('employee')">Normal Employee Page</button>
+      <button class="tabbtn" data-tab="raw" onclick="showTab('raw')">Raw API Tester</button>
+    </div>
 
-      <!-- EMPLOYEE VIEW NAVIGATION -->
-      <div id="navEmployee" class="bg-slate-800 border border-slate-700 rounded-lg p-3 sticky top-28 space-y-1">
-        <h2 class="text-xs font-bold text-indigo-400 uppercase tracking-widest px-3 mb-2">បុគ្គលិក / Employee Tabs</h2>
-        <button onclick="switchTab('emp-auth-section')" class="tab-btn-emp w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors bg-indigo-600 text-white">🔑 ចុះឈ្មោះ និងចូលប្រើ / Auth</button>
-        <button onclick="switchTab('emp-clock-section')" class="tab-btn-emp w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">⏰ កត់ត្រាវត្តមាន / Smart Clock-In</button>
-        <button onclick="switchTab('emp-requests-section')" class="tab-btn-emp w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">🏖️ សុំច្បាប់ និងថែមម៉ោង / Requests</button>
-        <button onclick="switchTab('emp-sales-section')" class="tab-btn-emp w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">🤝 CRM & Sales</button>
-        <button onclick="switchTab('emp-ewa-payslip')" class="tab-btn-emp w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">⚡ EWA & Payslip</button>
+    <section id="auth" class="tab active">
+      <div class="grid two">
+        <div class="card">
+          <h2>First-time Setup</h2>
+          <p class="small muted">Use only one time when database is empty. Creates organization + owner account.</p>
+          <label>Organization Name</label><input id="setupOrg" value="Demo Company" />
+          <label>Owner Name</label><input id="setupName" value="Owner" />
+          <label>Email</label><input id="setupEmail" value="admin@example.com" />
+          <label>Password</label><input id="setupPassword" type="password" value="admin123456" />
+          <div class="btns"><button class="primary" onclick="setupOwner()">Create First Owner</button></div>
+        </div>
+        <div class="card">
+          <h2>Login</h2>
+          <label>Email</label><input id="loginEmail" value="admin@example.com" />
+          <label>Password</label><input id="loginPassword" type="password" value="admin123456" />
+          <div class="btns"><button class="success" onclick="login()">Login</button><button onclick="loadMe()">Get /me</button></div>
+          <div class="notice warnn small" style="margin-top:12px">If browser CORS blocks requests, set Render env <span class="mono">CORS_ALLOWED_ORIGINS=*</span> for testing, then redeploy.</div>
+        </div>
       </div>
-
-      <!-- ADMIN VIEW NAVIGATION (Hidden by default) -->
-      <div id="navAdmin" class="bg-slate-800 border border-slate-700 rounded-lg p-3 sticky top-28 space-y-1 hidden">
-        <h2 class="text-xs font-bold text-amber-400 uppercase tracking-widest px-3 mb-2">អ្នកគ្រប់គ្រង / Admin Tabs</h2>
-        <button onclick="switchTab('admin-org-section')" class="tab-btn-admin w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors bg-amber-600 text-white">🏢 រចនាសម្ព័ន្ធអង្គភាព / Org & Staff</button>
-        <button onclick="switchTab('admin-shifts-section')" class="tab-btn-admin w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700">📅 Shifts & Schedules</button>
-        <button onclick="switchTab('admin-approvals-section')" class="tab-btn-admin w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700">📥 Approvals</button>
-        <button onclick="switchTab('admin-payroll-section')" class="tab-btn-admin w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700">💵 Payroll & Bank</button>
-        <button onclick="switchTab('admin-reports-webhook')" class="tab-btn-admin w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700">📊 Webhook & Reports</button>
-      </div>
+      <div class="card" style="margin-top:14px"><h3>Response</h3><pre id="authLog" class="log"></pre></div>
     </section>
 
-    <!-- MIDDLE COLUMN: INPUT PLAYGROUND & FORMS -->
-    <section class="lg:col-span-5 space-y-6">
-
-      <!-- ==================== EMPLOYEE WORKSPACE PANES ==================== -->
-      <div id="employee-workspace-group" class="space-y-4">
-        
-        <!-- Tab: Emp Auth -->
-        <div id="emp-auth-section" class="tab-pane-emp space-y-4">
-          <h2 class="text-base font-bold text-white border-b border-slate-700 pb-2">🔑 គណនី និងការចូលប្រើប្រាស់ (Authentication)</h2>
-          
-          <!-- Registration (Initial Setup) -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow">
-            <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded mb-2">POST</span>
-            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បង្កើតក្រុមហ៊ុន និងគណនីដំបូង (Setup Organization)</h3>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/setup', 'POST')" class="space-y-3 mt-2">
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400 uppercase">ឈ្មោះក្រុមហ៊ុន</label>
-                  <input type="text" name="org_name" value="Demo Company" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400 uppercase">ឈ្មោះអ្នកគ្រប់គ្រង</label>
-                  <input type="text" name="admin_name" value="Owner" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400 uppercase">អុីមែល</label>
-                  <input type="email" name="email" value="admin@example.com" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400 uppercase">លេខសម្ងាត់</label>
-                  <input type="password" name="password" value="admin123456" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded transition-colors">តម្លើងប្រព័ន្ធដំបូង / Initialize Setup</button>
-            </form>
+    <section id="owner" class="tab">
+      <div class="notice warnn">Owner/admin/manager functions. For permanent QR with <span class="mono">no_expiry=true</span>, use owner or admin account.</div>
+      <div class="grid two" style="margin-top:14px">
+        <div class="card">
+          <h2>1) Branch</h2>
+          <label>Name</label><input id="branchName" value="Phnom Penh HQ" />
+          <label>Address</label><input id="branchAddress" value="Phnom Penh, Cambodia" />
+          <div class="grid three">
+            <div><label>Latitude</label><input id="branchLat" value="11.5564" /></div>
+            <div><label>Longitude</label><input id="branchLng" value="104.9282" /></div>
+            <div><label>Radius M</label><input id="branchRadius" type="number" value="150" /></div>
           </div>
-
-          <!-- Login -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow">
-            <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded mb-2">POST</span>
-            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ការចូលប្រើប្រាស់ប្រព័ន្ធ (Login)</h3>
-            <form onsubmit="handleLoginSubmit(event)" class="space-y-3 mt-2">
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400 uppercase">អុីមែល</label>
-                  <input type="email" id="loginEmail" value="admin@example.com" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400 uppercase">លេខសម្ងាត់</label>
-                  <input type="password" id="loginPassword" value="admin123456" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-1.5 rounded transition-colors">ចូលប្រើ / Login</button>
-            </form>
-          </div>
+          <div class="btns"><button class="primary" onclick="createBranch()">Create Branch</button><button onclick="listBranches()">Refresh Branches</button></div>
+          <label>Select Branch For QR</label><select id="branchSelect"></select>
+          <div id="branchesTable" style="margin-top:12px"></div>
         </div>
 
-        <!-- Tab: Emp Clock-In -->
-        <div id="emp-clock-section" class="tab-pane-emp hidden space-y-4">
-          <h2 class="text-base font-bold text-white border-b border-slate-700 pb-2">⏰ ការកត់ត្រាវត្តមានបុគ្គលិក (Smart Attendance)</h2>
-          
-          <!-- QR Attendance -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">កត់ត្រាតាម QR Code (QR Clock)</h3>
-            
-            <!-- Real QR code reader block -->
-            <div id="qr-reader" class="hidden w-full max-w-xs mx-auto aspect-square bg-slate-950 rounded-lg overflow-hidden border border-slate-700 my-2"></div>
-
-            <form onsubmit="handleFormSubmit(event, '/api/v1/attendance/clock', 'POST')" class="space-y-2">
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">ប្រភេទ</label>
-                  <select name="kind" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="in">ចូល (In)</option>
-                    <option value="out">ចេញ (Out)</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ប្រភព</label>
-                  <input type="text" name="source" value="qr" readonly class="w-full bg-slate-900 text-xs border border-slate-700 p-1.5 text-slate-400 focus:outline-none" />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">កូដ QR Token</label>
-                  <input type="text" name="qr_token" id="qr_token_input" value="token-from-admin" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none font-mono" required />
-                </div>
-              </div>
-
-              <!-- Camera QR trigger button -->
-              <button type="button" id="btnScanQR" onclick="toggleQRScanner()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold">
-                📷 បើកកាមេរ៉ាស្កេនកូដ QR / Open Camera to Scan QR
-              </button>
-
-              <div class="grid grid-cols-3 gap-2 pt-1">
-                <div>
-                  <label class="block text-[10px] text-slate-400">Latitude</label>
-                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Longitude</label>
-                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ភាពជាក់លាក់ (m)</label>
-                  <input type="number" name="gps_accuracy_m" value="15" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បញ្ជូនការស្កេន QR / Submit QR Clock</button>
-            </form>
+        <div class="card">
+          <h2>2) Generate QR Token + Image</h2>
+          <label>QR Label</label><input id="qrLabel" value="Main Office QR" />
+          <div class="grid three">
+            <div><label>TTL Minutes</label><input id="qrTtl" type="number" value="480" /></div>
+            <div><label>Exact Expires At</label><input id="qrExpiresAt" placeholder="2026-06-06T18:00:00+07:00" /></div>
+            <div><label>QR Size PX</label><input id="qrSize" type="number" value="512" /></div>
           </div>
-
-          <!-- Face Scan Attendance -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">កត់ត្រាតាមការស្កេនមុខ (Face Scan Clock)</h3>
-            
-            <!-- Dynamic Face scan viewport video -->
-            <div id="face-scan-container" class="hidden relative w-full max-w-xs mx-auto aspect-video bg-slate-950 rounded-lg overflow-hidden border border-slate-700 my-2">
-              <video id="face-video" autoplay playsinline class="w-full h-full object-cover"></video>
-              <div class="absolute inset-0 border-2 border-emerald-500/50 pointer-events-none flex items-center justify-center">
-                <div class="w-32 h-32 border-2 border-dashed border-emerald-400 rounded-full animate-pulse relative">
-                  <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-emerald-400 animate-bounce"></div>
-                </div>
-              </div>
-              <div class="absolute bottom-1 left-0 right-0 text-center bg-slate-950/80 text-[9px] text-emerald-400 py-0.5 uppercase tracking-wider font-semibold">
-                កំពុងវិភាគទម្រង់មុខ... / Scanning Face...
-              </div>
-            </div>
-
-            <form onsubmit="handleFormSubmit(event, '/api/v1/attendance/face-scan', 'POST')" class="space-y-2">
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">ប្រភេទ</label>
-                  <select name="kind" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="in">ចូល (In)</option>
-                    <option value="out">ចេញ (Out)</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ប្រភព</label>
-                  <input type="text" name="source" value="face_scan" readonly class="w-full bg-slate-900 text-xs border border-slate-700 p-1.5 text-slate-400 focus:outline-none" />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ពិន្ទុភាពដូចគ្នា (%)</label>
-                  <input type="number" step="any" name="face_score" id="face_score_input" value="91.5" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-
-              <!-- Camera Face Scan trigger button -->
-              <button type="button" id="btnScanFace" onclick="toggleFaceScanner()" class="bg-teal-600 hover:bg-teal-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold">
-                👤 ស្កេនទម្រង់មុខផ្ទាល់ / Scan Face via Camera
-              </button>
-
-              <div class="grid grid-cols-2 gap-2 pt-1">
-                <div>
-                  <label class="block text-[10px] text-slate-400">Latitude</label>
-                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Longitude</label>
-                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បញ្ជូនការស្កេនមុខ / Submit Face Scan</button>
-            </form>
+          <div class="grid three">
+            <div><label>No Expiry</label><select id="qrNoExpiry"><option value="false">No</option><option value="true">Yes - permanent</option></select></div>
+            <div><label>Require GPS</label><select id="qrRequireGps"><option value="true">Yes</option><option value="false">No</option></select></div>
+            <div><label>Allowed Radius M</label><input id="qrRadius" type="number" value="150" /></div>
           </div>
-
-          <!-- Get Personal Attendance History -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <h3 class="font-bold text-xs text-indigo-400 uppercase">មើលប្រវត្តិវត្តមានផ្ទាល់ខ្លួន</h3>
-            <div class="grid grid-cols-2 gap-2">
-              <input type="date" id="empTodayDate" value="2026-06-05" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
-              <button onclick="fetchTodayAttendanceEmp()" class="bg-indigo-650 hover:bg-indigo-600 text-xs rounded py-1.5 text-white">បង្ហាញវត្តមានថ្ងៃនេះ</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab: Emp Requests -->
-        <div id="emp-requests-section" class="tab-pane-emp hidden space-y-4">
-          <h2 class="text-base font-bold text-white border-b border-slate-700 pb-2">🏖️ ស្នើសុំច្បាប់ និងថែមម៉ោង (Leave & Overtime)</h2>
-          
-          <!-- Submit Leave Request -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ការសុំច្បាប់ឈប់សម្រាក</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/leave/requests')" class="text-indigo-400 hover:text-indigo-300 text-[10px] font-semibold">បញ្ជីសំណើផ្ទាល់ខ្លួន →</button>
-            </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/leave/requests', 'POST')" class="space-y-2">
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">ប្រភេទច្បាប់</label>
-                  <select name="leave_type" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="casual">ច្បាប់ផ្ទាល់ខ្លួន (Casual)</option>
-                    <option value="sick">ច្បាប់ឈឺ (Sick)</option>
-                    <option value="annual">សម្រាកប្រចាំឆ្នាំ (Annual)</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ចាប់ពីថ្ងៃ</label>
-                  <input type="date" name="start_date" value="2026-06-10" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">រហូតដល់ថ្ងៃ</label>
-                  <input type="date" name="end_date" value="2026-06-12" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400">មូលហេតុ</label>
-                <input type="text" name="reason" value="Personal matters" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">ផ្ញើសំណើសុំច្បាប់ / Submit Leave</button>
-            </form>
-          </div>
-
-          <!-- Submit Overtime Request -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ការស្នើសុំថែមម៉ោង (OT Request)</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/overtime/requests')" class="text-indigo-400 hover:text-indigo-300 text-[10px] font-semibold">បញ្ជី OT ផ្ទាល់ខ្លួន →</button>
-            </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/overtime/requests', 'POST')" class="space-y-2">
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">កាលបរិច្ឆេទ</label>
-                  <input type="date" name="date" value="2026-06-08" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ចំនួនម៉ោង</label>
-                  <input type="number" step="any" name="hours" value="2.5" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400">មូលហេតុ</label>
-                <input type="text" name="reason" value="Project deployment" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">ផ្ញើសំណើថែមម៉ោង / Submit OT</button>
-            </form>
-          </div>
-        </div>
-
-        <!-- Tab: Emp Sales/CRM -->
-        <div id="emp-sales-section" class="tab-pane-emp hidden space-y-4">
-          <h2 class="text-base font-bold text-white border-b border-slate-700 pb-2">🤝 การចុះជួបអតិថិជនក្រៅការិយាល័យ (Outside Sales & CRM)</h2>
-          
-          <!-- Sales Check-in -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ចុះឈ្មោះចូលជួបអតិថិជន (Sales Check-In)</h3>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/sales/visits/checkin', 'POST')" class="space-y-2">
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">លេខអតិថិជន ID</label>
-                  <input type="number" name="customer_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Latitude</label>
-                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Longitude</label>
-                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400">កំណត់ចំណាំ</label>
-                <input type="text" name="notes" value="Initial meeting" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded font-semibold">កត់ត្រាចូលជួប (Check-In)</button>
-            </form>
-          </div>
-
-          <!-- Sales Checkout -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <span class="inline-block bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
-            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បញ្ចប់ការចុះជួប (Sales Check-Out)</h3>
-            <form onsubmit="handleSalesCheckout(event)" class="space-y-2">
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">លេខដំណើរជួប ID</label>
-                  <input type="number" id="visitCheckoutId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Latitude</label>
-                  <input type="number" step="any" id="visitCheckoutLat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Longitude</label>
-                  <input type="number" step="any" id="visitCheckoutLng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400">លទ្ធផលសម្រេចបាន</label>
-                <input type="text" id="visitCheckoutNotes" value="Follow up scheduled" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded font-semibold">កត់ត្រាចេញ (Check-Out)</button>
-            </form>
-          </div>
-
-          <!-- Get Active Clients -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow flex justify-between items-center">
-            <span class="text-xs text-slate-300 font-semibold">បញ្ជីអតិថិជន និងប្រវត្តិចុះជួប</span>
-            <div class="flex gap-1">
-              <button onclick="handleGetRequest('/api/v1/customers')" class="bg-slate-700 hover:bg-slate-600 text-[11px] px-3 py-1 rounded">មើលអតិថិជន</button>
-              <button onclick="handleFetchVisits()" class="bg-slate-700 hover:bg-slate-600 text-[11px] px-3 py-1 rounded">ប្រវត្តិចុះជួប</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab: Emp EWA/Payslip -->
-        <div id="emp-ewa-payslip" class="tab-pane-emp hidden space-y-4">
-          <h2 class="text-base font-bold text-white border-b border-slate-700 pb-2">⚡ ការបើកប្រាក់បៀវត្សរ៍មុន និងវិក្កយបត្រ (EWA & Payslips)</h2>
-          
-          <!-- Submit EWA Request -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ស្នើបើកប្រាក់មុន (Earned Wage Access)</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/ewa/requests')" class="text-indigo-400 hover:text-indigo-300 text-[10px] font-semibold font-mono">ប្រវត្តិបើកលុយមុន →</button>
-            </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/ewa/requests', 'POST')" class="space-y-2">
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">ចំនួនទឹកប្រាក់ ($)</label>
-                  <input type="number" name="amount" value="50" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">មូលហេតុចាំបាច់</label>
-                  <input type="text" name="reason" value="Emergency medicine" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded font-semibold">ស្នើសុំដកប្រាក់ / Submit EWA</button>
-            </form>
-          </div>
-
-          <!-- View Single Payslip -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <h3 class="font-bold text-xs text-slate-200">ទាញយកវិក្កយបត្រប្រាក់ខែ (View Payslip)</h3>
-            <div class="space-y-2">
-              <div class="grid grid-cols-3 gap-1">
-                <input type="number" id="payslipRunIdEmp" placeholder="Run ID" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
-                <input type="text" id="payslipUserIdEmp" placeholder="User UUID" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none col-span-2" />
-              </div>
-              <button onclick="fetchPayslipEmp()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs py-1.5 rounded font-semibold">មើល Payslip របស់ខ្ញុំ</button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-
-      <!-- ==================== ADMIN/HR/MANAGER WORKSPACE PANES ==================== -->
-      <div id="admin-workspace-group" class="space-y-4 hidden">
-        
-        <!-- Tab: Admin Org & Staffing -->
-        <div id="admin-org-section" class="tab-pane-admin hidden space-y-4">
-          <h2 class="text-base font-bold text-amber-500 border-b border-slate-700 pb-2">🏢 ការរៀបចំរចនាសម្ព័ន្ធ និងគ្រប់គ្រងបុគ្គលិក</h2>
-          
-          <!-- Branches -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បង្កើតសាខាការិយាល័យ (Create Branch)</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/branches')" class="text-amber-400 hover:text-amber-300 text-[10px] font-semibold">បញ្ជីសាខា →</button>
-            </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/branches', 'POST')" class="space-y-2">
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">ឈ្មោះសាខា</label>
-                  <input type="text" name="name" value="Phnom Penh HQ" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ចម្ងាយអនុញ្ញាត (ម៉ែត្រ)</label>
-                  <input type="number" name="radius_m" value="100" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">Latitude</label>
-                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Longitude</label>
-                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">ចុះឈ្មោះសាខា / Register Branch</button>
-            </form>
-          </div>
-
-          <!-- Departments -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បង្កើតផ្នែក/ដេប៉ាតឺម៉ង់ (Create Department)</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/departments')" class="text-amber-400 hover:text-amber-300 text-[10px] font-semibold">បញ្ជីដេប៉ាតឺម៉ង់ →</button>
-            </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/departments', 'POST')" class="space-y-2">
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">ឈ្មោះផ្នែក</label>
-                  <input type="text" name="name" value="Engineering" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">សាខា ID</label>
-                  <input type="number" name="branch_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បង្កើតផ្នែក / Create Department</button>
-            </form>
-          </div>
-
-          <!-- Add Staff Profile -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បន្ថែមគណនីបុគ្គលិកថ្មី (Add Employee)</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/employees')" class="text-amber-400 hover:text-amber-300 text-[10px] font-semibold">បញ្ជីបុគ្គលិកទាំងអស់ →</button>
-            </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/employees', 'POST')" class="space-y-2">
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">ឈ្មោះពេញ</label>
-                  <input type="text" name="name" value="John Doe" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">អុីមែល</label>
-                  <input type="email" name="email" value="john@example.com" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">លេខសម្ងាត់</label>
-                  <input type="password" name="password" value="password123" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">តួនាទី</label>
-                  <select name="role" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="employee">Employee</option>
-                    <option value="sales">Sales</option>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Admin</option>
-                    <option value="owner">Owner</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ប្រាក់ខែ/ថ្ងៃ ($)</label>
-                  <input type="number" name="daily_rate" value="50" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">សាខា ID</label>
-                  <input type="number" name="branch_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ផ្នែក ID</label>
-                  <input type="number" name="department_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បង្កើតគណនី / Create Employee</button>
-            </form>
-          </div>
-
-          <!-- Update Profile Roles (PATCH) -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
-            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">កែប្រែព័ត៌មានបុគ្គលិក (Modify Profile)</h3>
-            <form onsubmit="handleEmployeePatch(event)" class="space-y-2">
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">បុគ្គលិក ID (UUID)</label>
-                  <input type="text" id="patchEmpId" placeholder="uuid" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ឈ្មោះថ្មី</label>
-                  <input type="text" id="patchEmpName" value="John Updated" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ប្តូរតួនាទី</label>
-                  <select id="patchEmpRole" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="">រក្សាទុកដដែល</option>
-                    <option value="employee">Employee</option>
-                    <option value="sales">Sales</option>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Admin</option>
-                    <option value="owner">Owner</option>
-                  </select>
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">រក្សាទុកការកែប្រែ / Save Changes</button>
-            </form>
-          </div>
-        </div>
-
-        <!-- Tab: Admin Shifts & Schedules -->
-        <div id="admin-shifts-section" class="tab-pane-admin hidden space-y-4">
-          <h2 class="text-base font-bold text-amber-500 border-b border-slate-700 pb-2">📅 ការកំណត់វេនការងារ និងកាលវិភាគការងារ</h2>
-          
-          <!-- Shifts Template -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បង្កើតគំរូវេនការងារ (Shift Blueprint)</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/shifts')" class="text-amber-400 hover:text-amber-300 text-[10px] font-semibold">គំរូទាំងអស់ →</button>
-            </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/shifts', 'POST')" class="space-y-2">
-              <div>
-                <label class="block text-[10px] text-slate-400">ឈ្មោះវេន</label>
-                <input type="text" name="name" value="Day Shift" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">ម៉ោងចូលធ្វើការ (HH:MM)</label>
-                  <input type="text" name="start_time" value="08:00" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ម៉ោងចេញ (HH:MM)</label>
-                  <input type="text" name="end_time" value="17:00" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">រក្សាទុកគំរូវេន / Create Shift Template</button>
-            </form>
-          </div>
-
-          <!-- Schedule Assignments -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ចាត់តាំងកាលវិភាគការងារ (Assign Shifts)</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/schedule-assignments')" class="text-amber-400 hover:text-amber-300 text-[10px] font-semibold font-mono">កាលវិភាគទាំងអស់ →</button>
-            </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/schedule-assignments', 'POST')" class="space-y-2">
-              <div>
-                <label class="block text-[10px] text-slate-400">បុគ្គលិក ID (UUID)</label>
-                <input type="text" name="user_id" placeholder="uuid-xxxx-xxxx" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">លេខគំរូវេន ID</label>
-                  <input type="number" name="shift_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">កាលបរិច្ឆេទ</label>
-                  <input type="date" name="date" value="2026-06-08" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បញ្ជូនការចាត់តាំង / Assign Shift</button>
-            </form>
-          </div>
-
-          <!-- Generate Active QR Codes -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បង្កើត QR Token សម្រាប់បញ្ជរស្កេន (Generate QR Tokens)</h3>
-            
-            <form onsubmit="handleGenerateQRToken(event)" class="space-y-2">
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">សាខា ID (Branch ID)</label>
-                  <input type="number" id="qrBranchId" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">រយៈពេលសុពលភាព (Duration / TTL)</label>
-                  <select id="qrTtlPreset" onchange="toggleCustomTtlInput()" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="60">៦០ វិនាទី / 60 seconds (Default)</option>
-                    <option value="300">៥ នាទី / 5 minutes</option>
-                    <option value="3600">១ ម៉ោង / 1 hour</option>
-                    <option value="0">គ្មានកំណត់ពេល / No Limit (0)</option>
-                    <option value="custom">កំណត់រយៈពេលផ្ទាល់ខ្លួន... / Custom...</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- Custom TTL seconds input (Hidden by default) -->
-              <div id="customTtlContainer" class="hidden">
-                <label class="block text-[10px] text-slate-400">កំណត់វិនាទីដោយខ្លួនឯង (TTL Seconds)</label>
-                <input type="number" id="qrTtlCustom" value="120" min="0" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
-              </div>
-
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded font-semibold">បង្កើតកូដ QR សកម្ម / Create Active Token</button>
-            </form>
-
-            <!-- Success Generation Output (Dynamic QR code renders here) -->
-            <div id="qr-result-box" class="hidden mt-4 p-4 bg-slate-900 border border-slate-700 rounded text-center space-y-3">
-              <h4 class="text-xs font-semibold text-emerald-400 uppercase">កូដ QR សម្រាប់ស្កេន / Scan QR Code</h4>
-              <div class="bg-white p-3 inline-block rounded">
-                <img id="generated-qr-img" src="" alt="Generated QR Code" class="mx-auto w-48 h-48" />
-              </div>
-              <p class="text-[10px] text-slate-400">Token String: <span id="generated-qr-string" class="font-mono text-slate-300 break-all select-all font-semibold"></span></p>
-              <p class="text-[9px] text-slate-500 italic">បុគ្គលិកអាចប្រើទូរស័ព្ទស្កេនរូបភាពខាងលើ ដើម្បីកត់ត្រាវត្តមានភ្លាមៗ។</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab: Admin Approvals -->
-        <div id="admin-approvals-section" class="tab-pane-admin hidden space-y-4">
-          <h2 class="text-base font-bold text-amber-500 border-b border-slate-700 pb-2">📥 ផ្ទាំងអនុម័ត និងសម្រេចសំណើ (Approvals Hub)</h2>
-          
-          <!-- Approve Leave -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
-                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">អនុម័តសំណើសុំច្បាប់ (Approve Leave)</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/leave/requests')" class="text-indigo-400 hover:text-indigo-300 text-[11px] font-semibold">មើលសំណើទាំងអស់ →</button>
-            </div>
-            <form onsubmit="handleLeaveApprove(event)" class="space-y-2">
-              <div class="grid grid-cols-3 gap-2">
-                <div class="col-span-2">
-                  <label class="block text-[10px] text-slate-400">លេខសំណើ ID (Numeric)</label>
-                  <input type="number" id="leaveAppId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">សេចក្តីសម្រេច</label>
-                  <select id="leaveAppStatus" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="approved">យល់ព្រម (Approve)</option>
-                    <option value="rejected">បដិសេធ (Reject)</option>
-                  </select>
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បញ្ជូនការសម្រេចចិត្ត</button>
-            </form>
-          </div>
-
-          <!-- Approve Overtime -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
-                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">អនុម័តការថែមម៉ោង (Approve Overtime)</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/overtime/requests')" class="text-indigo-400 hover:text-indigo-300 text-[11px] font-semibold">មើលសំណើ OT ទាំងអស់ →</button>
-            </div>
-            <form onsubmit="handleOvertimeApprove(event)" class="space-y-2">
-              <div class="grid grid-cols-3 gap-2">
-                <div class="col-span-2">
-                  <label class="block text-[10px] text-slate-400">លេខសំណើ ID (Numeric)</label>
-                  <input type="number" id="otAppId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">សេចក្តីសម្រេច</label>
-                  <select id="otAppStatus" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="approved">យល់ព្រម (Approve)</option>
-                    <option value="rejected">បដិសេធ (Reject)</option>
-                  </select>
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បញ្ជូនការសម្រេចចិត្ត</button>
-            </form>
-          </div>
-
-          <!-- Approve EWA Requests -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
-                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">អនុម័តបើកលុយមុន (Approve EWA)</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/ewa/requests')" class="text-indigo-400 hover:text-indigo-300 text-[11px] font-semibold">សំណើ EWA ទាំងអស់ →</button>
-            </div>
-            <form onsubmit="handleEWAApprove(event)" class="space-y-2">
-              <div class="grid grid-cols-3 gap-2">
-                <div class="col-span-2">
-                  <label class="block text-[10px] text-slate-400">លេខសំណើ ID</label>
-                  <input type="number" id="ewaAppId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">សេចក្តីសម្រេច</label>
-                  <select id="ewaAppStatus" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="approved">យល់ព្រម (Approve)</option>
-                    <option value="rejected">បដិសេធ (Reject)</option>
-                  </select>
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បញ្ជូនការសម្រេចចិត្ត</button>
-            </form>
-          </div>
-        </div>
-
-        <!-- Tab: Admin Payroll & Banking -->
-        <div id="admin-payroll-section" class="tab-pane-admin hidden space-y-4">
-          <h2 class="text-base font-bold text-amber-500 border-b border-slate-700 pb-2">💵 ការគណនាប្រាក់បៀវត្សរ៍ និងប្រព័ន្ធធនាគារ (Payroll Engine)</h2>
-          
-          <!-- Payroll Config & Execution -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-4">
+          <div class="btns"><button class="success" onclick="generateQR()">Generate QR Token</button><button onclick="copyLastQRToken()">Copy Token</button></div>
+          <div class="qrbox" style="margin-top:14px">
+            <div class="qrimg" id="qrImageBox"><span>QR image will appear here</span></div>
             <div>
-              <div class="flex justify-between items-center">
-                <div>
-                  <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                  <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ដំណើរការគណនាប្រាក់បៀវត្សរ៍ (Run Payroll)</h3>
-                </div>
-                <button onclick="handleGetRequest('/api/v1/payroll/runs')" class="text-amber-400 hover:text-amber-300 text-[11px] font-semibold">បញ្ជីធ្លាប់ Run ទាំងអស់ →</button>
-              </div>
-              <form onsubmit="handleFormSubmit(event, '/api/v1/payroll/runs', 'POST')" class="space-y-2 mt-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">សម្រាប់ខែ-ឆ្នាំ (YYYY-MM)</label>
-                  <input type="text" name="month" value="2026-06" placeholder="YYYY-MM" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded font-semibold">ចាប់ផ្តើមគណនា / Execute Run</button>
-              </form>
-            </div>
-
-            <!-- Run Control Interface -->
-            <div class="border-t border-slate-700 pt-3 space-y-3">
-              <h4 class="text-xs font-semibold text-slate-300">ការគ្រប់គ្រង និងទាញយកទិន្នន័យ (Run ID actions)</h4>
-              <div>
-                <label class="block text-[10px] text-slate-400">បញ្ចូល Run ID</label>
-                <input type="number" id="payrollRunId" placeholder="e.g. 1" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 w-full focus:outline-none" />
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <button onclick="getPayrollRunDetails()" class="bg-slate-700 hover:bg-slate-600 text-[11px] py-1 px-2 rounded">មើលលម្អិត</button>
-                <button onclick="approvePayrollRun()" class="bg-emerald-600 hover:bg-emerald-500 text-[11px] py-1 px-2 rounded font-semibold text-white">អនុម័ត Run នេះ</button>
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <button onclick="payoutPayrollRun()" class="bg-indigo-600 hover:bg-indigo-500 text-[11px] py-1 px-2 rounded font-semibold text-white">ប្រកាសបើកលុយ</button>
-                <button onclick="generateBankBatches()" class="bg-violet-600 hover:bg-violet-500 text-[11px] py-1 px-2 rounded font-semibold text-white">បង្កើត Bank Batch</button>
-              </div>
-              <div class="border-t border-slate-700 pt-2 grid grid-cols-2 gap-2">
-                <button onclick="downloadCSV('/api/v1/payroll/runs/' + getRunId() + '/export.csv')" class="bg-slate-750 hover:bg-slate-700 text-[10px] py-1 px-1 rounded truncate">📄 Export CSV</button>
-                <button onclick="downloadCSV('/api/v1/payroll/runs/' + getRunId() + '/bank-statement.csv')" class="bg-slate-750 hover:bg-slate-700 text-[10px] py-1 px-1 rounded truncate">🏛️ Bank Statement</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Bank Accounts Linking -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ភ្ជាប់គណនីធនាគាររបស់បុគ្គលិក (Bank Accounts)</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/bank/accounts')" class="text-amber-400 hover:text-amber-300 text-[10px] font-semibold">គណនីទាំងអស់ →</button>
-            </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/bank/accounts', 'POST')" class="space-y-2">
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">បុគ្គលិក ID (UUID)</label>
-                  <input type="text" name="user_id" placeholder="uuid" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ឈ្មោះធនាគារ</label>
-                  <input type="text" name="bank_name" value="ABA Bank" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">លេខគណនី</label>
-                  <input type="text" name="account_number" value="123456789" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">ឈ្មោះម្ចាស់គណនី</label>
-                  <input type="text" name="account_name" value="John Doe" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">ភ្ជាប់ធនាគារ / Link Bank Account</button>
-            </form>
-          </div>
-        </div>
-
-        <!-- Tab: Admin Reports & Webhook Simulation -->
-        <div id="admin-reports-webhook" class="tab-pane-admin hidden space-y-4">
-          <h2 class="text-base font-bold text-amber-500 border-b border-slate-700 pb-2">📊 របាយការណ៍ និងការធ្វើតេស្តសេវាទិន្នន័យ (Reports & Webhooks)</h2>
-          
-          <!-- Webhook Simulator -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ការកត់ត្រាវត្តមានសិប្បនិម្មិតពីម៉ាស៊ីន (Biometric Webhook Simulator)</h3>
-            <form onsubmit="handleWebhookSimulate(event)" class="space-y-2">
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold uppercase font-mono">លេខសម្ងាត់ឧបករណ៍ (X-Device-Secret)</label>
-                <input type="text" id="webhookSecret" value="TEST_WEBHOOK_SECRET_KEY" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none font-mono" required />
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">លេខសម្គាល់ម៉ាស៊ីន (Device ID)</label>
-                  <input type="text" id="webhookDeviceId" value="DEV-9988" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none font-mono" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Enroll ID របស់បុគ្គលិក</label>
-                  <input type="text" id="webhookFaceId" value="12345" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none font-mono" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold py-1.5 rounded transition-colors">បញ្ជូន Event Webhook / Dispatch Webhook</button>
-            </form>
-          </div>
-
-          <!-- Reporting Hub -->
-          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
-            <h3 class="font-bold text-xs text-slate-200 uppercase">របាយការណ៍សរុប (System Reports)</h3>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] text-slate-400">ប្រភេទជុំព័ត៌មាន</label>
-                <select id="reportPeriod" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                  <option value="daily">ប្រចាំថ្ងៃ (Daily)</option>
-                  <option value="weekly">ប្រចាំសប្តាហ៍ (Weekly)</option>
-                  <option value="monthly">ប្រចាំខែ (Monthly)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400">កាលបរិច្ឆេទគោលដៅ</label>
-                <input type="date" id="reportDate" value="2026-06-05" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
-              </div>
-            </div>
-            <div class="grid grid-cols-3 gap-1 pt-1">
-              <button onclick="fetchSummaryReport()" class="bg-slate-750 hover:bg-slate-700 text-[10px] py-1 px-1 rounded truncate text-slate-300">ទាញ Summary</button>
-              <button onclick="fetchInsightsReport()" class="bg-slate-750 hover:bg-slate-700 text-[10px] py-1 px-1 rounded truncate text-slate-300">ទាញ Insights</button>
-              <button onclick="triggerTelegramDaily()" class="bg-indigo-600 hover:bg-indigo-500 text-[10px] py-1 px-1 rounded truncate text-white font-mono">✈️ Send Daily Telegram</button>
+              <div class="btns" style="margin-top:0"><a id="qrDownload" class="btn hidden" download="checkinme-qr.png">Download QR PNG</a></div>
+              <pre id="qrLog" class="log"></pre>
             </div>
           </div>
         </div>
-
       </div>
 
-    </section>
-
-    <!-- RIGHT COLUMN: DYNAMIC INTERACTIVE CONSOLE -->
-    <section class="lg:col-span-4 flex flex-col gap-4">
-      <div class="bg-slate-950 border border-slate-800 rounded-lg p-4 flex flex-col h-[750px] sticky top-28 shadow-2xl">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
-          <h2 class="text-xs font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
-            <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span>
-            ប្រព័ន្ធត្រួតពិនិត្យទិន្នន័យ / Console Log
-          </h2>
-          <button onclick="clearConsole()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white px-2 py-1 rounded transition-colors">សម្អាតផ្ទាំង</button>
+      <div class="grid two" style="margin-top:14px">
+        <div class="card">
+          <h2>3) Create Employee</h2>
+          <div class="grid two">
+            <div><label>Full Name</label><input id="empName" value="Dara Sok" /></div>
+            <div><label>Email</label><input id="empEmail" value="dara@example.com" /></div>
+          </div>
+          <div class="grid three">
+            <div><label>Password</label><input id="empPassword" value="password123" /></div>
+            <div><label>Role</label><select id="empRole"><option>employee</option><option>sales</option><option>manager</option><option>admin</option></select></div>
+            <div><label>Employee Code</label><input id="empCode" value="EMP001" /></div>
+          </div>
+          <div class="grid three">
+            <div><label>Phone</label><input id="empPhone" value="+85512345678" /></div>
+            <div><label>Base Salary Cents</label><input id="empSalary" type="number" value="35000" /></div>
+            <div><label>Currency</label><input id="empCurrency" value="USD" /></div>
+          </div>
+          <div class="btns"><button class="primary" onclick="createEmployee()">Create Employee</button><button onclick="listEmployees()">List Employees</button></div>
+          <div id="employeesTable" style="margin-top:12px"></div>
         </div>
 
-        <div id="consoleOutput" class="flex-1 overflow-y-auto font-mono text-xs space-y-4 pr-1 leading-relaxed">
-          <div class="text-slate-500 italic">ព័ត៌មាននៃការហៅទូរស័ព្ទទៅកាន់ API, HTTP Headers, response payloads និងកំហុសប្រព័ន្ធផ្សេងៗនឹងបង្ហាញនៅទីនេះ។</div>
+        <div class="card">
+          <h2>Dashboard / Reports</h2>
+          <div class="grid three">
+            <div><label>Report Period</label><select id="reportPeriod"><option>daily</option><option>weekly</option><option>monthly</option><option>yearly</option></select></div>
+            <div><label>Date</label><input id="reportDate" type="date" /></div>
+            <div><label>Fraud Status</label><select id="fraudStatus"><option value="">All</option><option>warning</option><option>needs_review</option><option>blocked</option><option>confirmed</option><option>false_positive</option></select></div>
+          </div>
+          <div class="btns">
+            <button onclick="getPerformance()">Performance</button>
+            <button onclick="getReportSummary()">Report Summary</button>
+            <button onclick="getInsights()">Insights</button>
+            <button onclick="listFraudAlerts()">Fraud Alerts</button>
+          </div>
+          <pre id="ownerReportLog" class="log" style="margin-top:12px"></pre>
+        </div>
+      </div>
+
+      <div class="grid two" style="margin-top:14px">
+        <div class="card">
+          <h2>Leave / Overtime Approval</h2>
+          <div class="btns"><button onclick="listLeaveRequests()">List Leave</button><button onclick="listOvertimeRequests()">List Overtime</button></div>
+          <div class="grid three">
+            <div><label>Request ID</label><input id="reviewRequestId" placeholder="leave or overtime id" /></div>
+            <div><label>Status</label><select id="reviewStatus"><option>approved</option><option>rejected</option></select></div>
+            <div><label>Type</label><select id="reviewType"><option value="leave">Leave</option><option value="overtime">Overtime</option></select></div>
+          </div>
+          <label>Note</label><input id="reviewNote" value="Reviewed by manager" />
+          <div class="btns"><button class="success" onclick="reviewRequest()">Submit Review</button></div>
+          <pre id="approvalLog" class="log" style="margin-top:12px"></pre>
+        </div>
+        <div class="card">
+          <h2>Payroll Quick Test</h2>
+          <label>Month</label><input id="payrollMonth" type="month" />
+          <div class="btns"><button onclick="getPayrollRules()">Rules</button><button class="primary" onclick="createPayrollRun()">Create Run</button><button onclick="listPayrollRuns()">List Runs</button></div>
+          <label>Payroll Run ID</label><input id="payrollRunId" placeholder="paste payroll run id" />
+          <div class="btns"><button onclick="getPayrollRun()">Get Run</button><button class="success" onclick="approvePayrollRun()">Approve</button></div>
+          <pre id="payrollLog" class="log" style="margin-top:12px"></pre>
         </div>
       </div>
     </section>
 
-  </main>
+    <section id="employee" class="tab">
+      <div class="notice">Normal employee functions: GPS/QR/face clock, leave, overtime, EWA, bank account, own attendance.</div>
+      <div class="grid two" style="margin-top:14px">
+        <div class="card">
+          <h2>Attendance Clock</h2>
+          <div class="grid three">
+            <div><label>Kind</label><select id="clockKind"><option value="in">Clock In</option><option value="out">Clock Out</option></select></div>
+            <div><label>Source</label><select id="clockSource"><option value="gps">GPS</option><option value="qr">QR</option><option value="mobile">Mobile</option></select></div>
+            <div><label>Mock Location</label><select id="clockMock"><option value="false">False</option><option value="true">True</option></select></div>
+          </div>
+          <label>QR Token / Scanned Value</label><textarea id="clockQrToken" placeholder="Paste QR token here or scan with camera below"></textarea>
+          <div class="grid three">
+            <div><label>Latitude</label><input id="clockLat" /></div>
+            <div><label>Longitude</label><input id="clockLng" /></div>
+            <div><label>GPS Accuracy M</label><input id="clockAccuracy" type="number" value="15" /></div>
+          </div>
+          <label>Device ID</label><input id="clockDevice" value="browser-test-device" />
+          <div class="btns"><button onclick="useMyLocation()">Use My Location</button><button class="success" onclick="clockAttendance()">Submit Clock</button><button onclick="getAttendanceToday()">Today</button><button onclick="getSessions()">Sessions</button></div>
+          <pre id="clockLog" class="log" style="margin-top:12px"></pre>
+        </div>
 
-  <footer class="bg-slate-950 border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-500 mt-auto">
-    <p>Checkin-Me QR-Generator & Biometric Enabled Dashboard Core. Decodes and renders verification workflows dynamically.</p>
-  </footer>
+        <div class="card">
+          <h2>QR Camera Scanner</h2>
+          <p class="small muted">Uses browser BarcodeDetector when supported. HTTPS required on most browsers.</p>
+          <video id="qrVideo" playsinline muted></video>
+          <div class="btns"><button class="primary" onclick="startQRScanner()">Start Camera Scan</button><button class="danger" onclick="stopQRScanner()">Stop</button></div>
+          <pre id="scanLog" class="log" style="margin-top:12px"></pre>
+        </div>
+      </div>
 
-  <!-- PROGRAM LOGIC -->
-  <script>
-    // State indicators
-    let html5QrCodeInstance = null;
-    let faceVideoStreamInstance = null;
+      <div class="grid three" style="margin-top:14px">
+        <div class="card">
+          <h2>Face Scan Test</h2>
+          <label>Kind</label><select id="faceKind"><option value="in">Clock In</option><option value="out">Clock Out</option></select>
+          <label>Face Score</label><input id="faceScore" type="number" value="96" />
+          <div class="btns"><button onclick="useMyLocation()">Use Location</button><button class="success" onclick="faceScanClock()">Submit Face Scan</button></div>
+          <pre id="faceLog" class="log" style="margin-top:12px"></pre>
+        </div>
+        <div class="card">
+          <h2>Leave Request</h2>
+          <label>Leave Type</label><input id="leaveType" value="annual" />
+          <label>Start Date</label><input id="leaveStart" type="date" />
+          <label>End Date</label><input id="leaveEnd" type="date" />
+          <label>Reason</label><textarea id="leaveReason">Family trip</textarea>
+          <div class="btns"><button class="primary" onclick="createLeave()">Submit Leave</button><button onclick="listMyLeave()">My Leave</button></div>
+          <pre id="leaveLog" class="log" style="margin-top:12px"></pre>
+        </div>
+        <div class="card">
+          <h2>Overtime Request</h2>
+          <label>Work Date</label><input id="otDate" type="date" />
+          <label>Minutes</label><input id="otMinutes" type="number" value="120" />
+          <label>Reason</label><textarea id="otReason">Monthly stock count</textarea>
+          <div class="btns"><button class="primary" onclick="createOvertime()">Submit OT</button><button onclick="listMyOvertime()">My OT</button></div>
+          <pre id="otLog" class="log" style="margin-top:12px"></pre>
+        </div>
+      </div>
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const cachedToken = localStorage.getItem("api_token");
-      if (cachedToken) {
-        document.getElementById("tokenInput").value = cachedToken;
-      }
-      checkHealth();
-    });
+      <div class="grid two" style="margin-top:14px">
+        <div class="card">
+          <h2>EWA Request</h2>
+          <label>Amount Cents</label><input id="ewaAmount" type="number" value="5000" />
+          <label>Reason</label><input id="ewaReason" value="Emergency expense" />
+          <div class="btns"><button class="primary" onclick="createEWA()">Request EWA</button><button onclick="listEWA()">List EWA</button></div>
+          <pre id="ewaLog" class="log" style="margin-top:12px"></pre>
+        </div>
+        <div class="card">
+          <h2>Bank Account</h2>
+          <label>Bank Name</label><input id="bankName" value="PPCBank" />
+          <label>Account Name</label><input id="bankAccountName" value="Dara Sok" />
+          <label>Account Number</label><input id="bankAccountNumber" value="00123456789" />
+          <label>Currency</label><input id="bankCurrency" value="USD" />
+          <div class="btns"><button class="primary" onclick="saveBankAccount()">Save Bank Account</button><button onclick="listBankAccounts()">List Bank Accounts</button></div>
+          <pre id="bankLog" class="log" style="margin-top:12px"></pre>
+        </div>
+      </div>
+    </section>
 
-    // Toggle custom TTL inputs
-    function toggleCustomTtlInput() {
-      const preset = document.getElementById("qrTtlPreset").value;
-      const container = document.getElementById("customTtlContainer");
-      if (preset === "custom") {
-        container.classList.remove("hidden");
-      } else {
-        container.classList.add("hidden");
-      }
-    }
+    <section id="raw" class="tab">
+      <div class="card">
+        <h2>Raw API Tester</h2>
+        <div class="grid three">
+          <div><label>Method</label><select id="rawMethod"><option>GET</option><option>POST</option><option>PATCH</option><option>PUT</option><option>DELETE</option></select></div>
+          <div><label>Endpoint Path</label><input id="rawPath" value="/api/v1/me" /></div>
+          <div><label>Use Auth</label><select id="rawAuth"><option value="true">Yes</option><option value="false">No</option></select></div>
+        </div>
+        <label>JSON Body</label><textarea id="rawBody" placeholder='{"key":"value"}'></textarea>
+        <div class="btns"><button class="primary" onclick="sendRaw()">Send</button><button onclick="document.getElementById('rawBody').value=''">Clear Body</button></div>
+        <pre id="rawLog" class="log" style="margin-top:12px"></pre>
+      </div>
+    </section>
+  </div>
 
-    // Dynamic QR generation core logic
-    async function handleGenerateQRToken(event) {
-      event.preventDefault();
-      const branchId = parseInt(document.getElementById("qrBranchId").value, 10);
-      const ttlPreset = document.getElementById("qrTtlPreset").value;
-      let ttlSeconds = 60;
+<script>
+const $ = id => document.getElementById(id);
+let state = {
+  token: localStorage.getItem('cm_token') || '',
+  user: JSON.parse(localStorage.getItem('cm_user') || 'null'),
+  baseUrl: localStorage.getItem('cm_base_url') || 'http://localhost:8080',
+  lastQRToken: '',
+  scannerStream: null,
+  scannerTimer: null,
+};
 
-      if (ttlPreset === "custom") {
-        ttlSeconds = parseInt(document.getElementById("qrTtlCustom").value, 10) || 0;
-      } else {
-        ttlSeconds = parseInt(ttlPreset, 10);
-      }
+function init(){
+  $('baseUrl').value = state.baseUrl;
+  const today = new Date().toISOString().slice(0,10);
+  ['reportDate','leaveStart','leaveEnd','otDate'].forEach(id => { if($(id)) $(id).value = today; });
+  if($('payrollMonth')) $('payrollMonth').value = today.slice(0,7);
+  updateAuthUI();
+  writeLog('authLog', {message:'Ready. Set API URL, login, then test endpoints.'});
+}
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tabbtn').forEach(el=>el.classList.remove('active'));
+  $(name).classList.add('active');
+  document.querySelector(`[data-tab="${name}"]`).classList.add('active');
+}
+function saveBaseUrl(){
+  state.baseUrl = $('baseUrl').value.trim().replace(/\/$/, '');
+  localStorage.setItem('cm_base_url', state.baseUrl);
+  toast('Saved API URL: '+state.baseUrl);
+}
+function toast(msg){ console.log(msg); }
+function updateAuthUI(){
+  $('tokenStatus').textContent = state.token ? 'logged in' : 'not logged in';
+  $('roleStatus').textContent = state.user?.role || state.user?.Role || '-';
+  $('userStatus').textContent = state.user?.email || state.user?.Email || state.user?.name || state.user?.FullName || '-';
+}
+function logout(){
+  state.token=''; state.user=null;
+  localStorage.removeItem('cm_token'); localStorage.removeItem('cm_user');
+  updateAuthUI(); writeLog('authLog',{ok:true,message:'Logged out'});
+}
+function writeLog(id, data){ $(id).textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2); }
+function clean(obj){
+  for (const k of Object.keys(obj)) {
+    if (obj[k] === '' || obj[k] === undefined || obj[k] === null || (Number.isNaN(obj[k]))) delete obj[k];
+  }
+  return obj;
+}
+function num(id){ const v=$(id).value.trim(); return v===''?undefined:Number(v); }
+function intVal(id){ const v=$(id).value.trim(); return v===''?undefined:parseInt(v,10); }
+function boolVal(id){ return $(id).value === 'true'; }
+function authHeader(useAuth=true){ return useAuth && state.token ? {'Authorization':'Bearer '+state.token} : {}; }
 
-      const payload = {
-        branch_id: branchId,
-        ttl_seconds: ttlSeconds
-      };
+async function api(method, path, body, useAuth=true){
+  saveBaseUrl();
+  const headers = {'Accept':'application/json', ...authHeader(useAuth)};
+  let opts = {method, headers};
+  if (body !== undefined && method !== 'GET') { headers['Content-Type']='application/json'; opts.body=JSON.stringify(body); }
+  const res = await fetch(state.baseUrl + path, opts);
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : {}; } catch { data = {raw:text}; }
+  if(!res.ok){ throw {status:res.status, data}; }
+  return data;
+}
+async function run(logId, fn){
+  try{ const data = await fn(); writeLog(logId, data); return data; }
+  catch(e){ writeLog(logId, {ok:false, status:e.status||0, error:e.data?.error || e.message || 'Request failed', response:e.data||e}); return null; }
+}
 
-      const res = await makeRequest("/api/v1/attendance/qr-tokens", "POST", payload);
-      const resultBox = document.getElementById("qr-result-box");
-      const qrImg = document.getElementById("generated-qr-img");
-      const qrStr = document.getElementById("generated-qr-string");
+async function healthCheck(){ return run('authLog',()=>api('GET','/health',undefined,false)); }
+async function setupOwner(){
+  const body = {org_name:$('setupOrg').value, admin_name:$('setupName').value, email:$('setupEmail').value, password:$('setupPassword').value};
+  const data = await run('authLog',()=>api('POST','/api/v1/setup',body,false));
+  if(data?.token){ state.token=data.token; state.user={id:data.user_id,org_id:data.org_id,role:'owner',email:body.email,name:body.admin_name}; persistAuth(); }
+}
+async function login(){
+  const body={email:$('loginEmail').value.trim(),password:$('loginPassword').value};
+  const data = await run('authLog',()=>api('POST','/api/v1/auth/login',body,false));
+  if(data?.token){ state.token=data.token; state.user=data.user; persistAuth(); }
+}
+function persistAuth(){ localStorage.setItem('cm_token',state.token); localStorage.setItem('cm_user',JSON.stringify(state.user)); updateAuthUI(); }
+async function loadMe(){
+  const data = await run('authLog',()=>api('GET','/api/v1/me'));
+  if(data?.user){ state.user=data.user; persistAuth(); }
+}
 
-      if (res.ok && res.data) {
-        // Safe access keys depending on backend standards
-        const tokenVal = res.data.qr_token || res.data.token || (res.data.data && res.data.data.qr_token) || "";
-        
-        if (tokenVal) {
-          qrStr.innerText = tokenVal;
-          // Dynamically query free open QR generation server API
-          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(tokenVal)}`;
-          resultBox.classList.remove("hidden");
-          logToConsole("បង្កើត QR Token ជោគជ័យ និងបង្ហាញរូបភាពកូដ QR ។", "SUCCESS");
-        } else {
-          logToConsole("មិនអាចទាញយក Token ពី Response payload បានទេ!", "ERROR");
-          resultBox.classList.add("hidden");
+async function createBranch(){
+  const body = clean({name:$('branchName').value.trim(), address:$('branchAddress').value.trim(), lat:num('branchLat'), lng:num('branchLng'), gps_radius_m:intVal('branchRadius')});
+  const data = await run('ownerReportLog',()=>api('POST','/api/v1/branches',body));
+  await listBranches();
+  return data;
+}
+async function listBranches(){
+  const data = await run('ownerReportLog',()=>api('GET','/api/v1/branches'));
+  const branches = data?.branches || [];
+  $('branchSelect').innerHTML = branches.map(b=>`<option value="${escapeHtml(b.id)}">${escapeHtml(b.name)} — ${escapeHtml(b.id)}</option>`).join('');
+  renderTable('branchesTable', branches, ['id','name','address','lat','lng','gps_radius_m','active'], row=>{ $('branchSelect').value=row.id; });
+  return data;
+}
+async function generateQR(){
+  const branch_id = $('branchSelect').value;
+  if(!branch_id){ writeLog('qrLog',{ok:false,error:'Create or refresh branches first, then select branch.'}); return; }
+  const noExpiry = boolVal('qrNoExpiry');
+  const body = clean({
+    branch_id,
+    label:$('qrLabel').value.trim(),
+    qr_size_px:intVal('qrSize') || 512,
+    require_gps:boolVal('qrRequireGps'),
+    allowed_radius_m:intVal('qrRadius')
+  });
+  if(noExpiry){ body.no_expiry = true; }
+  else if($('qrExpiresAt').value.trim()){ body.expires_at = $('qrExpiresAt').value.trim(); }
+  else { body.ttl_minutes = intVal('qrTtl') || 480; }
+  const data = await run('qrLog',()=>api('POST','/api/v1/attendance/qr-tokens',body));
+  if(data?.qr_image_data_url){
+    state.lastQRToken = data.token || data.qr_content || '';
+    $('qrImageBox').innerHTML = `<img src="${data.qr_image_data_url}" alt="CheckinMe QR" />`;
+    $('qrDownload').href = data.qr_image_data_url;
+    $('qrDownload').classList.remove('hidden');
+  }
+  return data;
+}
+async function copyLastQRToken(){
+  if(!state.lastQRToken){ writeLog('qrLog',{ok:false,error:'No QR token generated yet'}); return; }
+  await navigator.clipboard.writeText(state.lastQRToken);
+  writeLog('qrLog',{ok:true,message:'QR token copied', token:state.lastQRToken});
+}
+async function createEmployee(){
+  const body = clean({
+    full_name:$('empName').value.trim(), email:$('empEmail').value.trim(), password:$('empPassword').value,
+    role:$('empRole').value, employee_code:$('empCode').value.trim(), phone:$('empPhone').value.trim(),
+    base_salary_cents:intVal('empSalary') || 0, currency:$('empCurrency').value.trim().toUpperCase(), branch_id:$('branchSelect').value || undefined
+  });
+  const data = await run('ownerReportLog',()=>api('POST','/api/v1/employees',body));
+  await listEmployees();
+  return data;
+}
+async function listEmployees(){
+  const data = await run('ownerReportLog',()=>api('GET','/api/v1/employees?limit=100&offset=0'));
+  renderTable('employeesTable', data?.employees || data?.items || [], ['id','full_name','email','role','employee_code','branch_id','base_salary_cents','active']);
+  return data;
+}
+async function getPerformance(){ return run('ownerReportLog',()=>api('GET','/api/v1/system/performance')); }
+async function getReportSummary(){
+  const qs = new URLSearchParams(clean({period:$('reportPeriod').value,date:$('reportDate').value}));
+  return run('ownerReportLog',()=>api('GET','/api/v1/reports/summary?'+qs.toString()));
+}
+async function getInsights(){
+  const qs = new URLSearchParams(clean({period:$('reportPeriod').value,date:$('reportDate').value}));
+  return run('ownerReportLog',()=>api('GET','/api/v1/reports/insights?'+qs.toString()));
+}
+async function listFraudAlerts(){
+  const qs = new URLSearchParams(clean({status:$('fraudStatus').value,limit:'100',offset:'0'}));
+  return run('ownerReportLog',()=>api('GET','/api/v1/attendance/fraud-alerts?'+qs.toString()));
+}
+async function listLeaveRequests(){ return run('approvalLog',()=>api('GET','/api/v1/leave/requests')); }
+async function listOvertimeRequests(){ return run('approvalLog',()=>api('GET','/api/v1/overtime/requests')); }
+async function reviewRequest(){
+  const id=$('reviewRequestId').value.trim();
+  const type=$('reviewType').value;
+  const path = type==='leave' ? `/api/v1/leave/requests/${encodeURIComponent(id)}/approve` : `/api/v1/overtime/requests/${encodeURIComponent(id)}/approve`;
+  return run('approvalLog',()=>api('PATCH',path,{status:$('reviewStatus').value,note:$('reviewNote').value}));
+}
+async function getPayrollRules(){ return run('payrollLog',()=>api('GET','/api/v1/payroll/rules')); }
+async function createPayrollRun(){ return run('payrollLog',()=>api('POST','/api/v1/payroll/runs',{month:$('payrollMonth').value})); }
+async function listPayrollRuns(){ return run('payrollLog',()=>api('GET','/api/v1/payroll/runs')); }
+async function getPayrollRun(){ return run('payrollLog',()=>api('GET','/api/v1/payroll/runs/'+encodeURIComponent($('payrollRunId').value.trim()))); }
+async function approvePayrollRun(){ return run('payrollLog',()=>api('POST','/api/v1/payroll/runs/'+encodeURIComponent($('payrollRunId').value.trim())+'/approve',{})); }
+
+function useMyLocation(){
+  if(!navigator.geolocation){ writeLog('clockLog',{ok:false,error:'Geolocation not supported'}); return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    $('clockLat').value = pos.coords.latitude.toFixed(7);
+    $('clockLng').value = pos.coords.longitude.toFixed(7);
+    $('clockAccuracy').value = Math.round(pos.coords.accuracy || 15);
+    writeLog('clockLog',{ok:true,lat:$('clockLat').value,lng:$('clockLng').value,accuracy_m:$('clockAccuracy').value});
+  },err=>writeLog('clockLog',{ok:false,error:err.message}),{enableHighAccuracy:true,timeout:12000,maximumAge:30000});
+}
+async function clockAttendance(){
+  const src=$('clockSource').value;
+  const body = clean({
+    kind:$('clockKind').value, source:src,
+    qr_token:src==='qr' ? $('clockQrToken').value.trim() : undefined,
+    lat:num('clockLat'), lng:num('clockLng'), gps_accuracy_m:intVal('clockAccuracy'),
+    mock_location:boolVal('clockMock'), device_id:$('clockDevice').value.trim()
+  });
+  return run('clockLog',()=>api('POST','/api/v1/attendance/clock',body));
+}
+async function faceScanClock(){
+  const body=clean({kind:$('faceKind').value, source:'face_scan', face_score:num('faceScore'), lat:num('clockLat'), lng:num('clockLng'), gps_accuracy_m:intVal('clockAccuracy'), device_id:$('clockDevice').value.trim()});
+  return run('faceLog',()=>api('POST','/api/v1/attendance/face-scan',body));
+}
+async function getAttendanceToday(){ return run('clockLog',()=>api('GET','/api/v1/attendance/today')); }
+async function getSessions(){ return run('clockLog',()=>api('GET','/api/v1/attendance/sessions?limit=50&offset=0')); }
+
+async function startQRScanner(){
+  const logId='scanLog';
+  if(!('BarcodeDetector' in window)){ writeLog(logId,{ok:false,error:'BarcodeDetector is not supported in this browser. Use Chrome/Edge Android or paste token manually.'}); return; }
+  try{
+    const detector = new BarcodeDetector({formats:['qr_code']});
+    state.scannerStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const video=$('qrVideo'); video.srcObject=state.scannerStream; await video.play();
+    writeLog(logId,{ok:true,message:'Scanning...'});
+    state.scannerTimer = setInterval(async()=>{
+      try{
+        const codes = await detector.detect(video);
+        if(codes.length){
+          const value = codes[0].rawValue || '';
+          $('clockQrToken').value = value;
+          $('clockSource').value = 'qr';
+          writeLog(logId,{ok:true,message:'QR detected and copied to QR Token field',value});
+          stopQRScanner();
         }
-      } else {
-        resultBox.classList.add("hidden");
-      }
-    }
+      }catch(e){ console.warn(e); }
+    },700);
+  }catch(e){ writeLog(logId,{ok:false,error:e.message}); }
+}
+function stopQRScanner(){
+  if(state.scannerTimer){ clearInterval(state.scannerTimer); state.scannerTimer=null; }
+  if(state.scannerStream){ state.scannerStream.getTracks().forEach(t=>t.stop()); state.scannerStream=null; }
+  $('qrVideo').srcObject=null;
+}
 
-    // Toggle logic between different layouts
-    function toggleWorkspace(type) {
-      const empW = document.getElementById("employee-workspace-group");
-      const adminW = document.getElementById("admin-workspace-group");
-      const navEmp = document.getElementById("navEmployee");
-      const navAdmin = document.getElementById("navAdmin");
-      const btnEmp = document.getElementById("btnEmpWorkspace");
-      const btnAdmin = document.getElementById("btnAdminWorkspace");
+async function createLeave(){
+  const body={leave_type:$('leaveType').value.trim(),start_date:$('leaveStart').value,end_date:$('leaveEnd').value,reason:$('leaveReason').value.trim()};
+  return run('leaveLog',()=>api('POST','/api/v1/leave/requests',body));
+}
+async function listMyLeave(){ return run('leaveLog',()=>api('GET','/api/v1/leave/requests')); }
+async function createOvertime(){
+  const body={work_date:$('otDate').value,minutes:intVal('otMinutes')||0,reason:$('otReason').value.trim()};
+  return run('otLog',()=>api('POST','/api/v1/overtime/requests',body));
+}
+async function listMyOvertime(){ return run('otLog',()=>api('GET','/api/v1/overtime/requests')); }
+async function createEWA(){ return run('ewaLog',()=>api('POST','/api/v1/ewa/requests',{amount_cents:intVal('ewaAmount')||0,reason:$('ewaReason').value.trim()})); }
+async function listEWA(){ return run('ewaLog',()=>api('GET','/api/v1/ewa/requests')); }
+async function saveBankAccount(){
+  const body=clean({bank_name:$('bankName').value.trim(),account_name:$('bankAccountName').value.trim(),account_number:$('bankAccountNumber').value.trim(),currency:$('bankCurrency').value.trim().toUpperCase(),is_primary:true});
+  return run('bankLog',()=>api('POST','/api/v1/bank/accounts',body));
+}
+async function listBankAccounts(){ return run('bankLog',()=>api('GET','/api/v1/bank/accounts')); }
 
-      stopAllCameraStreams();
+async function sendRaw(){
+  const method=$('rawMethod').value, path=$('rawPath').value.trim();
+  let body;
+  if(method !== 'GET' && $('rawBody').value.trim()){
+    try{ body=JSON.parse($('rawBody').value); }catch(e){ writeLog('rawLog',{ok:false,error:'Invalid JSON body: '+e.message}); return; }
+  }
+  return run('rawLog',()=>api(method,path,body,$('rawAuth').value==='true'));
+}
+function renderTable(targetId, items, cols, onClick){
+  if(!Array.isArray(items) || !items.length){ $(targetId).innerHTML='<p class="small muted">No data.</p>'; return; }
+  const html = `<table><thead><tr>${cols.map(c=>`<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>` +
+    items.map((row,i)=>`<tr data-i="${i}">${cols.map(c=>`<td>${escapeHtml(formatVal(row[c]))}</td>`).join('')}</tr>`).join('') + '</tbody></table>';
+  $(targetId).innerHTML = html;
+  if(onClick){ $(targetId).querySelectorAll('tbody tr').forEach(tr=>tr.onclick=()=>onClick(items[Number(tr.dataset.i)])); }
+}
+function formatVal(v){ if(v===null||v===undefined) return ''; if(typeof v==='object') return JSON.stringify(v); return String(v); }
+function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-      if (type === "employee") {
-        empW.classList.remove("hidden");
-        adminW.classList.add("hidden");
-        navEmp.classList.remove("hidden");
-        navAdmin.classList.add("hidden");
-        btnEmp.className = "px-4 py-1.5 rounded text-xs font-semibold transition-all bg-indigo-600 text-white";
-        btnAdmin.className = "px-4 py-1.5 rounded text-xs font-semibold transition-all text-slate-400 hover:text-white";
-        switchTab('emp-auth-section');
-      } else {
-        empW.classList.add("hidden");
-        adminW.classList.remove("hidden");
-        navEmp.classList.add("hidden");
-        navAdmin.classList.remove("hidden");
-        btnEmp.className = "px-4 py-1.5 rounded text-xs font-semibold transition-all text-slate-400 hover:text-white";
-        btnAdmin.className = "px-4 py-1.5 rounded text-xs font-semibold transition-all bg-amber-600 text-white";
-        switchTab('admin-org-section');
-      }
-    }
-
-    // Tab switching logic for both views
-    function switchTab(activeTabId) {
-      stopAllCameraStreams();
-      
-      if (activeTabId.startsWith("emp-")) {
-        document.querySelectorAll(".tab-pane-emp").forEach(pane => pane.classList.add("hidden"));
-        document.getElementById(activeTabId).classList.remove("hidden");
-
-        document.querySelectorAll(".tab-btn-emp").forEach(btn => {
-          btn.classList.remove("bg-indigo-600", "text-white");
-          btn.classList.add("text-slate-300", "hover:bg-slate-700", "hover:text-white");
-        });
-        const clickedBtn = Array.from(document.querySelectorAll(".tab-btn-emp")).find(btn => 
-          btn.getAttribute("onclick").includes(activeTabId)
-        );
-        if (clickedBtn) {
-          clickedBtn.classList.remove("text-slate-300", "hover:bg-slate-700", "hover:text-white");
-          clickedBtn.classList.add("bg-indigo-600", "text-white");
-        }
-      } else {
-        document.querySelectorAll(".tab-pane-admin").forEach(pane => pane.classList.add("hidden"));
-        document.getElementById(activeTabId).classList.remove("hidden");
-
-        document.querySelectorAll(".tab-btn-admin").forEach(btn => {
-          btn.classList.remove("bg-amber-600", "text-white");
-          btn.classList.add("text-slate-300", "hover:bg-slate-700");
-        });
-        const clickedBtn = Array.from(document.querySelectorAll(".tab-btn-admin")).find(btn => 
-          btn.getAttribute("onclick").includes(activeTabId)
-        );
-        if (clickedBtn) {
-          clickedBtn.classList.remove("text-slate-300", "hover:bg-slate-700");
-          clickedBtn.classList.add("bg-amber-600", "text-white");
-        }
-      }
-    }
-
-    // Clean Camera Streams
-    function stopAllCameraStreams() {
-      if (html5QrCodeInstance) {
-        try {
-          html5QrCodeInstance.stop().catch(e => {});
-        } catch(e){}
-        html5QrCodeInstance = null;
-      }
-      const readerDiv = document.getElementById("qr-reader");
-      if (readerDiv) readerDiv.classList.add("hidden");
-      const btnQR = document.getElementById("btnScanQR");
-      if (btnQR) {
-        btnQR.innerText = "📷 បើកកាមេរ៉ាស្កេនកូដ QR / Open Camera to Scan QR";
-        btnQR.className = "bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold";
-      }
-
-      if (faceVideoStreamInstance) {
-        faceVideoStreamInstance.getTracks().forEach(track => track.stop());
-        faceVideoStreamInstance = null;
-      }
-      const containerFace = document.getElementById("face-scan-container");
-      if (containerFace) containerFace.classList.add("hidden");
-      const btnFace = document.getElementById("btnScanFace");
-      if (btnFace) {
-        btnFace.innerText = "👤 ស្កេនទម្រង់មុខផ្ទាល់ / Scan Face via Camera";
-        btnFace.className = "bg-teal-600 hover:bg-teal-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold";
-      }
-    }
-
-    // Camera QR Scanner Decodes
-    async function toggleQRScanner() {
-      const readerDiv = document.getElementById("qr-reader");
-      const btn = document.getElementById("btnScanQR");
-      const qrInput = document.getElementById("qr_token_input");
-
-      if (html5QrCodeInstance) {
-        stopAllCameraStreams();
-        logToConsole("បានបិទប្រព័ន្ធស្កេន QR ។", "SYSTEM");
-      } else {
-        readerDiv.classList.remove("hidden");
-        btn.innerText = "🛑 បិទកាមេរ៉ាស្កេន / Stop Scanning";
-        btn.className = "bg-rose-600 hover:bg-rose-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold";
-        
-        html5QrCodeInstance = new Html5Qrcode("qr-reader");
-        html5QrCodeInstance.start(
-          { facingMode: "environment" },
-          { 
-            fps: 10, 
-            qrbox: (width, height) => { 
-              return { width: Math.min(width, 220), height: Math.min(height, 220) }; 
-            } 
-          },
-          (decodedText) => {
-            qrInput.value = decodedText;
-            logToConsole(`ស្កេន QR ជោគជ័យ៖ [${decodedText}]`, "SUCCESS");
-            stopAllCameraStreams();
-          },
-          (err) => { /* Ignore standard scanning feedback loops */ }
-        ).catch(err => {
-          logToConsole("មិនអាចបើកកាមេរ៉ាបានទេ៖ " + err, "ERROR");
-          stopAllCameraStreams();
-        });
-      }
-    }
-
-    // Biometric scanner emulator
-    async function toggleFaceScanner() {
-      const container = document.getElementById("face-scan-container");
-      const video = document.getElementById("face-video");
-      const btn = document.getElementById("btnScanFace");
-      const faceScoreInput = document.getElementById("face_score_input");
-
-      if (faceVideoStreamInstance) {
-        stopAllCameraStreams();
-        logToConsole("បានបិទការស្កេនទម្រង់មុខ។", "SYSTEM");
-      } else {
-        container.classList.remove("hidden");
-        btn.innerText = "🛑 បិទការស្កេនមុខ / Cancel Scan";
-        btn.className = "bg-rose-600 hover:bg-rose-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold";
-
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-          faceVideoStreamInstance = stream;
-          video.srcObject = stream;
-          
-          logToConsole("កំពុងវិភាគទម្រង់មុខ (សូមកុំកម្រើក)...", "SYSTEM");
-          
-          setTimeout(() => {
-            if (faceVideoStreamInstance) {
-              const simulatedScore = (91 + Math.random() * 8.5).toFixed(1);
-              faceScoreInput.value = simulatedScore;
-              logToConsole(`វិភាគទម្រង់មុខជោគជ័យ! ភាពដូចគ្នា៖ ${simulatedScore}%`, "SUCCESS");
-              stopAllCameraStreams();
-            }
-          }, 3000);
-        } catch (err) {
-          logToConsole("មិនអាចបើកកាមេរ៉ាស្កេនមុខបានទេ៖ " + err, "ERROR");
-          stopAllCameraStreams();
-        }
-      }
-    }
-
-    // Reusable Request Core Handler
-    async function makeRequest(path, method = "GET", bodyPayload = null, extraHeaders = {}) {
-      const baseUrl = document.getElementById("baseUrlInput").value.replace(/\/$/, "");
-      const token = document.getElementById("tokenInput").value.trim();
-      const targetUrl = `${baseUrl}${path}`;
-
-      const headers = {
-        "Content-Type": "application/json",
-        ...extraHeaders
-      };
-
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
-
-      const options = {
-        method,
-        headers
-      };
-
-      if (bodyPayload && (method === "POST" || method === "PUT" || method === "PATCH")) {
-        options.body = JSON.stringify(bodyPayload);
-      }
-
-      const startTime = performance.now();
-      logToConsole(`ហៅទៅកាន់: ${method} ${targetUrl}`, "TX");
-      if (bodyPayload) {
-        logToConsole(`Payload: ${JSON.stringify(bodyPayload, null, 2)}`, "BODY");
-      }
-
-      try {
-        const response = await fetch(targetUrl, options);
-        const duration = (performance.now() - startTime).toFixed(1);
-        const isJson = response.headers.get("content-type")?.includes("application/json");
-        
-        const disposition = response.headers.get("Content-Disposition");
-        if (disposition && disposition.includes("attachment")) {
-          const blob = await response.blob();
-          logToConsole(`ទទួលបានឯកសារ Stream: [Status ${response.status}] [រយះពេល: ${duration}ms]`, "RX");
-          return { response, blob, isFile: true, status: response.status };
-        }
-
-        const data = isJson ? await response.json() : await response.text();
-        
-        if (response.ok) {
-          logToConsole(`ជោគជ័យ: [Status ${response.status}] [រយះពេល: ${duration}ms]`, "RX");
-          logToConsole(JSON.stringify(data, null, 2), "DATA");
-          return { data, status: response.status, ok: true };
-        } else {
-          logToConsole(`បរាជ័យ: [Status ${response.status}] [រយះពេល: ${duration}ms]`, "ERROR");
-          logToConsole(typeof data === 'object' ? JSON.stringify(data, null, 2) : data, "ERROR_BODY");
-          return { data, status: response.status, ok: false };
-        }
-      } catch (err) {
-        logToConsole(`កំហុសបណ្តាញតភ្ជាប់: ${err.message}`, "ERROR");
-        return { error: err.message, ok: false };
-      }
-    }
-
-    // Logger Display 
-    function logToConsole(message, type = "INFO") {
-      const consoleOutput = document.getElementById("consoleOutput");
-      const block = document.createElement("div");
-      block.className = "p-2 rounded border text-[11px] leading-relaxed break-words ";
-
-      switch (type) {
-        case "TX":
-          block.className += "bg-slate-900 border-slate-700 text-slate-300 font-semibold";
-          block.innerHTML = `<span>⚡</span> [ផ្ញើ] ${message}`;
-          break;
-        case "RX":
-          block.className += "bg-indigo-950 border-indigo-900/40 text-indigo-300 font-semibold";
-          block.innerHTML = `<span>📡</span> [ទទួល] ${message}`;
-          break;
-        case "BODY":
-        case "DATA":
-          block.className += "bg-slate-950 border-slate-900 text-teal-400 font-mono whitespace-pre-wrap overflow-x-auto";
-          block.innerText = message;
-          break;
-        case "ERROR":
-          block.className += "bg-rose-950/45 border-rose-900 text-rose-300 font-semibold";
-          block.innerHTML = `<span>🚨</span> [បរាជ័យ] ${message}`;
-          break;
-        case "ERROR_BODY":
-          block.className += "bg-rose-950/60 border-rose-900 text-rose-400 font-mono whitespace-pre-wrap overflow-x-auto";
-          block.innerText = message;
-          break;
-        case "SUCCESS":
-          block.className += "bg-emerald-950/40 border-emerald-900 text-emerald-300 font-semibold";
-          block.innerHTML = `<span>🟢</span> [ជោគជ័យ] ${message}`;
-          break;
-        default:
-          block.className += "bg-slate-900 border-slate-850 text-slate-400";
-          block.innerText = message;
-      }
-
-      consoleOutput.appendChild(block);
-      consoleOutput.scrollTop = consoleOutput.scrollHeight;
-    }
-
-    function clearConsole() {
-      document.getElementById("consoleOutput").innerHTML = `<div class="text-slate-500 italic">ផ្ទាំងកត់ត្រាទិន្នន័យត្រូវបានសម្អាតរួចរាល់។</div>`;
-    }
-
-    function clearToken() {
-      document.getElementById("tokenInput").value = "";
-      localStorage.removeItem("api_token");
-      logToConsole("JWT Token ត្រូវបានសម្អាតរួចរាល់។", "SYSTEM");
-    }
-
-    // Health Verification check
-    async function checkHealth() {
-      const result = await makeRequest("/health", "GET");
-      const healthBadge = document.getElementById("healthBadge");
-      if (result.ok) {
-        healthBadge.innerText = "Online / ដំណើរការ";
-        healthBadge.className = "text-emerald-400 font-semibold";
-      } else {
-        healthBadge.innerText = "Offline / រអាក់រអួល";
-        healthBadge.className = "text-rose-400 font-semibold";
-      }
-    }
-
-    // Generic form submission handler
-    async function handleFormSubmit(event, path, method) {
-      event.preventDefault();
-      const formData = new FormData(event.target);
-      const payload = {};
-      formData.forEach((value, key) => {
-        if (["branch_id", "department_id", "radius_m", "ttl_seconds", "customer_id"].includes(key)) {
-          payload[key] = parseInt(value, 10);
-        } else if (["lat", "lng", "gps_accuracy_m", "face_score", "hours", "amount", "daily_rate", "tax_rate", "insurance_rate", "target_visits", "target_revenue"].includes(key)) {
-          payload[key] = parseFloat(value);
-        } else {
-          payload[key] = value;
-        }
-      });
-
-      const res = await makeRequest(path, method, payload);
-      
-      if (res.ok && res.data && (res.data.token || res.data.access_token)) {
-        const token = res.data.token || res.data.access_token;
-        document.getElementById("tokenInput").value = token;
-        localStorage.setItem("api_token", token);
-        logToConsole("ប្រព័ន្ធបានទាញយក និងរក្សាទុក JWT Token រួចរាល់។", "SUCCESS");
-      }
-    }
-
-    // Handle login submissions
-    async function handleLoginSubmit(event) {
-      event.preventDefault();
-      const email = document.getElementById("loginEmail").value;
-      const password = document.getElementById("loginPassword").value;
-      const res = await makeRequest("/api/v1/auth/login", "POST", { email, password });
-      
-      if (res.ok && res.data && (res.data.token || res.data.access_token)) {
-        const token = res.data.token || res.data.access_token;
-        document.getElementById("tokenInput").value = token;
-        localStorage.setItem("api_token", token);
-        logToConsole("ចូលប្រព័ន្ធជោគជ័យ និងទទួលបាន Token។", "SUCCESS");
-      }
-    }
-
-    function handleGetRequest(path) {
-      makeRequest(path, "GET");
-    }
-
-    function fetchMe() {
-      makeRequest("/api/v1/me", "GET");
-    }
-
-    function handleEmployeeSearch(event) {
-      event.preventDefault();
-      const q = document.getElementById("empSearchQ").value;
-      const limit = document.getElementById("empSearchLimit").value;
-      const queryParams = new URLSearchParams();
-      if (q) queryParams.append("q", q);
-      if (limit) queryParams.append("limit", limit);
-      makeRequest(`/api/v1/employees?${queryParams.toString()}`, "GET");
-    }
-
-    function handleEmployeePatch(event) {
-      event.preventDefault();
-      const empId = document.getElementById("patchEmpId").value.trim();
-      const name = document.getElementById("patchEmpName").value.trim();
-      const role = document.getElementById("patchEmpRole").value;
-
-      const body = {};
-      if (name) body.name = name;
-      if (role) body.role = role;
-
-      if (!empId) {
-        logToConsole("សូមបញ្ចូលព័ត៌មានបុគ្គលិក ID ជាមុនសិន", "ERROR");
-        return;
-      }
-      makeRequest(`/api/v1/employees/${empId}`, "PATCH", body);
-    }
-
-    // Employee view attendance check
-    function fetchTodayAttendanceEmp() {
-      const date = document.getElementById("empTodayDate").value;
-      makeRequest(`/api/v1/attendance/today?date=${date}`, "GET");
-    }
-
-    // Approvals actions
-    function handleLeaveApprove(event) {
-      event.preventDefault();
-      const id = document.getElementById("leaveAppId").value;
-      const status = document.getElementById("leaveAppStatus").value;
-      makeRequest(`/api/v1/leave/requests/${id}/approve`, "PATCH", { status });
-    }
-
-    function handleOvertimeApprove(event) {
-      event.preventDefault();
-      const id = document.getElementById("otAppId").value;
-      const status = document.getElementById("otAppStatus").value;
-      makeRequest(`/api/v1/overtime/requests/${id}/approve`, "PATCH", { status });
-    }
-
-    // CRM Actions
-    function handleSalesCheckout(event) {
-      event.preventDefault();
-      const id = document.getElementById("visitCheckoutId").value;
-      const lat = parseFloat(document.getElementById("visitCheckoutLat").value);
-      const lng = parseFloat(document.getElementById("visitCheckoutLng").value);
-      const notes = document.getElementById("visitCheckoutNotes").value;
-      makeRequest(`/api/v1/sales/visits/${id}/checkout`, "PATCH", { lat, lng, notes });
-    }
-
-    function handleFetchVisits() {
-      makeRequest("/api/v1/sales/visits?from=2026-06-01&to=2026-06-30", "GET");
-    }
-
-    // Payroll and banking routines
-    function getRunId() {
-      const runId = document.getElementById("payrollRunId").value;
-      if (!runId) {
-        logToConsole("សូមបញ្ចូលលេខ Payroll Run ID សិន", "ERROR");
-        return "1";
-      }
-      return runId;
-    }
-
-    function getPayrollRunDetails() {
-      makeRequest(`/api/v1/payroll/runs/${getRunId()}`, "GET");
-    }
-
-    function approvePayrollRun() {
-      makeRequest(`/api/v1/payroll/runs/${getRunId()}/approve`, "POST");
-    }
-
-    function payoutPayrollRun() {
-      makeRequest(`/api/v1/payroll/runs/${getRunId()}/payout-export`, "POST");
-    }
-
-    function generateBankBatches() {
-      makeRequest(`/api/v1/payroll/runs/${getRunId()}/bank-batches`, "POST", { bank_name: "ABA Bank" });
-    }
-
-    function fetchPayslipEmp() {
-      const runId = document.getElementById("payslipRunIdEmp").value;
-      const userId = document.getElementById("payslipUserIdEmp").value.trim();
-      if (!runId || !userId) {
-        logToConsole("សូមបញ្ចូលព័ត៌មាន Run ID និង User UUID ជាមុនសិន", "ERROR");
-        return;
-      }
-      makeRequest(`/api/v1/payroll/runs/${runId}/payslips/${userId}`, "GET");
-    }
-
-    async function downloadCSV(path) {
-      const res = await makeRequest(path, "GET");
-      if (res.isFile && res.blob) {
-        const downloadUrl = window.URL.createObjectURL(res.blob);
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.setAttribute("download", path.split("/").pop());
-        document.body.appendChild(link);
-        link.click();
-        link.parentNode.removeChild(link);
-        logToConsole("ការទាញយកឯកសារប្រព័ន្ធត្រូវបានដំណើរការ។", "SUCCESS");
-      }
-    }
-
-    function handleEWAApprove(event) {
-      event.preventDefault();
-      const id = document.getElementById("ewaAppId").value;
-      const status = document.getElementById("ewaAppStatus").value;
-      makeRequest(`/api/v1/ewa/requests/${id}/approve`, "PATCH", { status });
-    }
-
-    function handleWebhookSimulate(event) {
-      event.preventDefault();
-      const secret = document.getElementById("webhookSecret").value;
-      const deviceId = document.getElementById("webhookDeviceId").value;
-      const faceId = document.getElementById("webhookFaceId").value;
-      const timestamp = new Date().toISOString();
-
-      const payload = {
-        device_id: deviceId,
-        face_id: faceId,
-        timestamp: timestamp
-      };
-
-      makeRequest("/api/v1/devices/face-events", "POST", payload, {
-        "X-Device-Secret": secret
-      });
-    }
-
-    function fetchSummaryReport() {
-      const period = document.getElementById("reportPeriod").value;
-      const date = document.getElementById("reportDate").value;
-      makeRequest(`/api/v1/reports/summary?period=${period}&date=${date}`, "GET");
-    }
-
-    function fetchInsightsReport() {
-      const period = document.getElementById("reportPeriod").value;
-      const date = document.getElementById("reportDate").value;
-      makeRequest(`/api/v1/reports/insights?period=${period}&date=${date}`, "GET");
-    }
-
-    function triggerTelegramDaily() {
-      const date = document.getElementById("reportDate").value;
-      makeRequest(`/api/v1/reports/telegram-daily?date=${date}`, "POST");
-    }
-  </script>
+init();
+</script>
 </body>
 </html>
