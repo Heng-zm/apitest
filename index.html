@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Checkin-Me Portal with Camera Scanner</title>
+  <title>Checkin-Me Portal with QR Generator</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- HTML5 QR Code CDN Scanner Library -->
@@ -37,7 +37,7 @@
       <div>
         <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
           <span>🛠️ Checkin-Me Portal</span>
-          <span class="text-xs font-normal bg-indigo-600/30 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">Camera Support</span>
+          <span class="text-xs font-normal bg-indigo-600/30 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">QR Code Live Engine</span>
         </h1>
         <p class="text-xs text-slate-400">ប្រព័ន្ធគ្រប់គ្រងវត្តមាន បុគ្គលិក និងបើកប្រាក់បៀវត្សរ៍ (Interactive Playground)</p>
       </div>
@@ -625,7 +625,7 @@
 
         <!-- Tab: Admin Shifts & Schedules -->
         <div id="admin-shifts-section" class="tab-pane-admin hidden space-y-4">
-          <h2 class="text-base font-bold text-amber-500 border-b border-slate-700 pb-2">📅 การកំណត់វេនការងារ និងកាលវិភាគការងារ</h2>
+          <h2 class="text-base font-bold text-amber-500 border-b border-slate-700 pb-2">📅 ការកំណត់វេនការងារ និងកាលវិភាគការងារ</h2>
           
           <!-- Shifts Template -->
           <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
@@ -687,19 +687,43 @@
           <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
             <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
             <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បង្កើត QR Token សម្រាប់បញ្ជរស្កេន (Generate QR Tokens)</h3>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/attendance/qr-tokens', 'POST')" class="space-y-2">
+            
+            <form onsubmit="handleGenerateQRToken(event)" class="space-y-2">
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400">សាខា ID</label>
-                  <input type="number" name="branch_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                  <label class="block text-[10px] text-slate-400">សាខា ID (Branch ID)</label>
+                  <input type="number" id="qrBranchId" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">សុពលភាព (វិនាទី)</label>
-                  <input type="number" name="ttl_seconds" value="60" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                  <label class="block text-[10px] text-slate-400">រយៈពេលសុពលភាព (Duration / TTL)</label>
+                  <select id="qrTtlPreset" onchange="toggleCustomTtlInput()" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="60">៦០ វិនាទី / 60 seconds (Default)</option>
+                    <option value="300">៥ នាទី / 5 minutes</option>
+                    <option value="3600">១ ម៉ោង / 1 hour</option>
+                    <option value="0">គ្មានកំណត់ពេល / No Limit (0)</option>
+                    <option value="custom">កំណត់រយៈពេលផ្ទាល់ខ្លួន... / Custom...</option>
+                  </select>
                 </div>
               </div>
+
+              <!-- Custom TTL seconds input (Hidden by default) -->
+              <div id="customTtlContainer" class="hidden">
+                <label class="block text-[10px] text-slate-400">កំណត់វិនាទីដោយខ្លួនឯង (TTL Seconds)</label>
+                <input type="number" id="qrTtlCustom" value="120" min="0" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
+              </div>
+
               <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded font-semibold">បង្កើតកូដ QR សកម្ម / Create Active Token</button>
             </form>
+
+            <!-- Success Generation Output (Dynamic QR code renders here) -->
+            <div id="qr-result-box" class="hidden mt-4 p-4 bg-slate-900 border border-slate-700 rounded text-center space-y-3">
+              <h4 class="text-xs font-semibold text-emerald-400 uppercase">កូដ QR សម្រាប់ស្កេន / Scan QR Code</h4>
+              <div class="bg-white p-3 inline-block rounded">
+                <img id="generated-qr-img" src="" alt="Generated QR Code" class="mx-auto w-48 h-48" />
+              </div>
+              <p class="text-[10px] text-slate-400">Token String: <span id="generated-qr-string" class="font-mono text-slate-300 break-all select-all font-semibold"></span></p>
+              <p class="text-[9px] text-slate-500 italic">បុគ្គលិកអាចប្រើទូរស័ព្ទស្កេនរូបភាពខាងលើ ដើម្បីកត់ត្រាវត្តមានភ្លាមៗ។</p>
+            </div>
           </div>
         </div>
 
@@ -945,7 +969,7 @@
   </main>
 
   <footer class="bg-slate-950 border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-500 mt-auto">
-    <p>Checkin-Me Camera Enabled Client Core. Decodes standard QR configurations and emulates facial landmark metrics directly.</p>
+    <p>Checkin-Me QR-Generator & Biometric Enabled Dashboard Core. Decodes and renders verification workflows dynamically.</p>
   </footer>
 
   <!-- PROGRAM LOGIC -->
@@ -962,6 +986,59 @@
       checkHealth();
     });
 
+    // Toggle custom TTL inputs
+    function toggleCustomTtlInput() {
+      const preset = document.getElementById("qrTtlPreset").value;
+      const container = document.getElementById("customTtlContainer");
+      if (preset === "custom") {
+        container.classList.remove("hidden");
+      } else {
+        container.classList.add("hidden");
+      }
+    }
+
+    // Dynamic QR generation core logic
+    async function handleGenerateQRToken(event) {
+      event.preventDefault();
+      const branchId = parseInt(document.getElementById("qrBranchId").value, 10);
+      const ttlPreset = document.getElementById("qrTtlPreset").value;
+      let ttlSeconds = 60;
+
+      if (ttlPreset === "custom") {
+        ttlSeconds = parseInt(document.getElementById("qrTtlCustom").value, 10) || 0;
+      } else {
+        ttlSeconds = parseInt(ttlPreset, 10);
+      }
+
+      const payload = {
+        branch_id: branchId,
+        ttl_seconds: ttlSeconds
+      };
+
+      const res = await makeRequest("/api/v1/attendance/qr-tokens", "POST", payload);
+      const resultBox = document.getElementById("qr-result-box");
+      const qrImg = document.getElementById("generated-qr-img");
+      const qrStr = document.getElementById("generated-qr-string");
+
+      if (res.ok && res.data) {
+        // Safe access keys depending on backend standards
+        const tokenVal = res.data.qr_token || res.data.token || (res.data.data && res.data.data.qr_token) || "";
+        
+        if (tokenVal) {
+          qrStr.innerText = tokenVal;
+          // Dynamically query free open QR generation server API
+          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(tokenVal)}`;
+          resultBox.classList.remove("hidden");
+          logToConsole("បង្កើត QR Token ជោគជ័យ និងបង្ហាញរូបភាពកូដ QR ។", "SUCCESS");
+        } else {
+          logToConsole("មិនអាចទាញយក Token ពី Response payload បានទេ!", "ERROR");
+          resultBox.classList.add("hidden");
+        }
+      } else {
+        resultBox.classList.add("hidden");
+      }
+    }
+
     // Toggle logic between different layouts
     function toggleWorkspace(type) {
       const empW = document.getElementById("employee-workspace-group");
@@ -971,7 +1048,6 @@
       const btnEmp = document.getElementById("btnEmpWorkspace");
       const btnAdmin = document.getElementById("btnAdminWorkspace");
 
-      // Stop active streams to prevent lock resources on switch
       stopAllCameraStreams();
 
       if (type === "employee") {
@@ -1032,7 +1108,6 @@
 
     // Clean Camera Streams
     function stopAllCameraStreams() {
-      // 1. Clean QR Scanner Instance
       if (html5QrCodeInstance) {
         try {
           html5QrCodeInstance.stop().catch(e => {});
@@ -1047,7 +1122,6 @@
         btnQR.className = "bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold";
       }
 
-      // 2. Clean Face Scan stream
       if (faceVideoStreamInstance) {
         faceVideoStreamInstance.getTracks().forEach(track => track.stop());
         faceVideoStreamInstance = null;
@@ -1061,7 +1135,7 @@
       }
     }
 
-    // Interactive Real-time Camera QR Scanner Decodes
+    // Camera QR Scanner Decodes
     async function toggleQRScanner() {
       const readerDiv = document.getElementById("qr-reader");
       const btn = document.getElementById("btnScanQR");
@@ -1087,9 +1161,9 @@
           (decodedText) => {
             qrInput.value = decodedText;
             logToConsole(`ស្កេន QR ជោគជ័យ៖ [${decodedText}]`, "SUCCESS");
-            stopAllCameraStreams(); // Closes camera loop automatically
+            stopAllCameraStreams();
           },
-          (err) => { /* Ignore constant framework search warnings */ }
+          (err) => { /* Ignore standard scanning feedback loops */ }
         ).catch(err => {
           logToConsole("មិនអាចបើកកាមេរ៉ាបានទេ៖ " + err, "ERROR");
           stopAllCameraStreams();
@@ -1097,7 +1171,7 @@
       }
     }
 
-    // Dynamic Live Face Capture Biometrics Scanner
+    // Biometric scanner emulator
     async function toggleFaceScanner() {
       const container = document.getElementById("face-scan-container");
       const video = document.getElementById("face-video");
@@ -1117,9 +1191,8 @@
           faceVideoStreamInstance = stream;
           video.srcObject = stream;
           
-          logToConsole("កំពុងវិភាគទម្រង់មុខ (សូមរក្សាជំហររបស់អ្នក)...", "SYSTEM");
+          logToConsole("កំពុងវិភាគទម្រង់មុខ (សូមកុំកម្រើក)...", "SYSTEM");
           
-          // Mimics standard biometric classification checks
           setTimeout(() => {
             if (faceVideoStreamInstance) {
               const simulatedScore = (91 + Math.random() * 8.5).toFixed(1);
@@ -1132,28 +1205,6 @@
           logToConsole("មិនអាចបើកកាមេរ៉ាស្កេនមុខបានទេ៖ " + err, "ERROR");
           stopAllCameraStreams();
         }
-      }
-    }
-
-    // Geolocation Grabber Helper
-    function getLocation() {
-      if (navigator.geolocation) {
-        logToConsole("កំពុងស្នើសុំទិន្នន័យទីតាំងពី Browser...", "SYSTEM");
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            logToConsole(`ទទួលបានទីតាំង: Lat ${lat}, Lng ${lng}`, "SUCCESS");
-            
-            document.querySelectorAll(".gps-lat").forEach(el => el.value = lat.toFixed(6));
-            document.querySelectorAll(".gps-lng").forEach(el => el.value = lng.toFixed(6));
-          },
-          (error) => {
-            logToConsole(`មិនអាចទទួលបានទិន្នន័យទីតាំងទេ: ${error.message}`, "ERROR");
-          }
-        );
-      } else {
-        logToConsole("Browser មិនមានមុខងារ Geolocation ទេ", "ERROR");
       }
     }
 
@@ -1305,7 +1356,7 @@
       }
     }
 
-    // Handle authentication login submissions
+    // Handle login submissions
     async function handleLoginSubmit(event) {
       event.preventDefault();
       const email = document.getElementById("loginEmail").value;
@@ -1361,7 +1412,7 @@
       makeRequest(`/api/v1/attendance/today?date=${date}`, "GET");
     }
 
-    // Leave & Overtime logic approvals
+    // Approvals actions
     function handleLeaveApprove(event) {
       event.preventDefault();
       const id = document.getElementById("leaveAppId").value;
@@ -1376,7 +1427,7 @@
       makeRequest(`/api/v1/overtime/requests/${id}/approve`, "PATCH", { status });
     }
 
-    // Sales CRM Actions
+    // CRM Actions
     function handleSalesCheckout(event) {
       event.preventDefault();
       const id = document.getElementById("visitCheckoutId").value;
@@ -1390,7 +1441,7 @@
       makeRequest("/api/v1/sales/visits?from=2026-06-01&to=2026-06-30", "GET");
     }
 
-    // Payroll helper processes
+    // Payroll and banking routines
     function getRunId() {
       const runId = document.getElementById("payrollRunId").value;
       if (!runId) {
@@ -1447,7 +1498,6 @@
       makeRequest(`/api/v1/ewa/requests/${id}/approve`, "PATCH", { status });
     }
 
-    // Webhook simulators
     function handleWebhookSimulate(event) {
       event.preventDefault();
       const secret = document.getElementById("webhookSecret").value;
@@ -1466,14 +1516,12 @@
       });
     }
 
-    // Reports Hub triggers
     function fetchSummaryReport() {
       const period = document.getElementById("reportPeriod").value;
       const date = document.getElementById("reportDate").value;
       makeRequest(`/api/v1/reports/summary?period=${period}&date=${date}`, "GET");
     }
 
-    // Trigger daily insights report
     function fetchInsightsReport() {
       const period = document.getElementById("reportPeriod").value;
       const date = document.getElementById("reportDate").value;
