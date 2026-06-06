@@ -1,179 +1,502 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="km">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>API Test Client & Dashboard</title>
+  <title>Checkin-Me Portal with Camera Scanner</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- HTML5 QR Code CDN Scanner Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
   <style>
-    /* Custom scrollbar styles for clean visual appearance */
+    @import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;600;700&display=swap');
+    body {
+      font-family: 'Kantumruy Pro', sans-serif;
+    }
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
     ::-webkit-scrollbar-track {
-      background: #1e293b;
+      background: #0f172a;
     }
     ::-webkit-scrollbar-thumb {
-      background: #475569;
+      background: #334155;
       border-radius: 3px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #64748b;
+      background: #475569;
     }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans min-h-screen flex flex-col">
+<body class="bg-slate-950 bg-slate-900 text-slate-100 min-h-screen flex flex-col">
 
   <!-- TOP HEADER -->
   <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 sticky top-0 z-50 shadow-md">
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div>
         <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-          <span>🛠️ API Developer Playground</span>
-          <span class="text-xs font-normal bg-indigo-600/30 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">v3-ready</span>
+          <span>🛠️ Checkin-Me Portal</span>
+          <span class="text-xs font-normal bg-indigo-600/30 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/30">Camera Support</span>
         </h1>
-        <p class="text-xs text-slate-400">Interactive test suite for testing and debugging HR, Sales, Attendance & Payroll API</p>
+        <p class="text-xs text-slate-400">ប្រព័ន្ធគ្រប់គ្រងវត្តមាន បុគ្គលិក និងបើកប្រាក់បៀវត្សរ៍ (Interactive Playground)</p>
+      </div>
+
+      <!-- WORKSPACE SWITCHER -->
+      <div class="bg-slate-950 p-1 rounded-lg border border-slate-700 flex gap-1 self-center">
+        <button id="btnEmpWorkspace" onclick="toggleWorkspace('employee')" class="px-4 py-1.5 rounded text-xs font-semibold transition-all bg-indigo-600 text-white">
+          🧑‍💼 ផ្នែកបុគ្គលិក / Employee
+        </button>
+        <button id="btnAdminWorkspace" onclick="toggleWorkspace('admin')" class="px-4 py-1.5 rounded text-xs font-semibold transition-all text-slate-400 hover:text-white">
+          🔑 ផ្នែកគ្រប់គ្រង / Admin-HR
+        </button>
       </div>
 
       <!-- Server & Auth Status -->
       <div class="flex flex-wrap items-center gap-3">
-        <!-- Base URL -->
         <div class="flex flex-col">
           <label class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Base URL</label>
           <input id="baseUrlInput" type="text" value="https://checkin-me.onrender.com" 
-                 class="bg-slate-950 text-slate-200 border border-slate-700 rounded px-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none w-52" />
+                 class="bg-slate-950 text-slate-200 border border-slate-700 rounded px-3 py-1 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none w-48" />
         </div>
 
-        <!-- Token -->
         <div class="flex flex-col">
-          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">JWT Token (Bearer)</label>
+          <label class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">JWT Token</label>
           <div class="relative flex items-center">
             <input id="tokenInput" type="text" placeholder="No active session" 
-                   class="bg-slate-950 text-slate-200 border border-slate-700 rounded-l px-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none w-64 truncate" />
-            <button onclick="clearToken()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 border-y border-r border-slate-700 hover:text-white px-2 py-1.5 text-xs rounded-r transition-colors">Clear</button>
+                   class="bg-slate-950 text-slate-200 border border-slate-700 rounded-l px-3 py-1 text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none w-48 truncate" />
+            <button onclick="clearToken()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 border-y border-r border-slate-700 hover:text-white px-2 py-1 text-xs rounded-r transition-colors">Clear</button>
           </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="flex gap-2 self-end">
-          <button onclick="fetchMe()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-3 py-1.5 rounded text-xs transition-all shadow-sm">
+        <div class="flex gap-1 self-end">
+          <button onclick="fetchMe()" class="bg-indigo-600/80 hover:bg-indigo-500 text-white font-semibold px-3 py-1 rounded text-xs transition-all shadow-sm">
             Fetch /me
           </button>
-          <button onclick="getLocation()" class="bg-teal-600 hover:bg-teal-500 text-white font-medium px-3 py-1.5 rounded text-xs transition-all shadow-sm" title="Get browser location coordinates for forms">
-            📍 Get GPS
+          <button onclick="getLocation()" class="bg-teal-600 hover:bg-teal-500 text-white font-semibold px-3 py-1 rounded text-xs transition-all shadow-sm" title="Get GPS coordinates">
+            📍 GPS
           </button>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- BODY WORKSPACE -->
+  <!-- MAIN WORKSPACE -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
     
-    <!-- NAVIGATION TABS (LEFT COLUMN) -->
+    <!-- LEFT SIDEBAR: NAVIGATION -->
     <section class="lg:col-span-3 flex flex-col gap-2">
-      <div class="bg-slate-800 border border-slate-700 rounded-lg p-3 sticky top-28">
-        <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest px-3 mb-3">API Categories</h2>
-        <nav class="flex flex-col gap-1 text-sm" id="navTabs">
-          <button onclick="switchTab('auth-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors bg-indigo-600 text-white">🔑 Auth & System</button>
-          <button onclick="switchTab('org-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">🏢 Organization & Staff</button>
-          <button onclick="switchTab('shifts-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">📅 Shifts & Schedules</button>
-          <button onclick="switchTab('attendance-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">⏰ Smart Attendance</button>
-          <button onclick="switchTab('leave-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">🏖️ Leave & Overtime</button>
-          <button onclick="switchTab('sales-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">🤝 CRM & Outside Sales</button>
-          <button onclick="switchTab('payroll-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">💵 Payroll & Bank Batches</button>
-          <button onclick="switchTab('ewa-section')" class="tab-btn w-full text-left px-3 py-2.5 rounded font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">⚡ EWA & Integration</button>
-        </nav>
-        <div class="mt-4 pt-4 border-t border-slate-700 text-xs text-slate-400 space-y-2">
-          <p class="flex justify-between"><span>System Status:</span> <span id="healthBadge" class="text-slate-500 font-semibold">Unknown</span></p>
-          <button onclick="checkHealth()" class="w-full bg-slate-700 hover:bg-slate-600 py-1 rounded font-medium text-[11px] text-slate-300 transition-colors">Check Health</button>
-        </div>
+      <!-- Shared System Status -->
+      <div class="bg-slate-800 border border-slate-700 rounded-lg p-3 mb-2 text-xs text-slate-400 flex items-center justify-between">
+        <span class="flex items-center gap-1">Status: <span id="healthBadge" class="text-slate-500 font-semibold">Unknown</span></span>
+        <button onclick="checkHealth()" class="bg-slate-700 hover:bg-slate-600 text-[10px] text-slate-300 px-2 py-0.5 rounded">Check</button>
+      </div>
+
+      <!-- EMPLOYEE VIEW NAVIGATION -->
+      <div id="navEmployee" class="bg-slate-800 border border-slate-700 rounded-lg p-3 sticky top-28 space-y-1">
+        <h2 class="text-xs font-bold text-indigo-400 uppercase tracking-widest px-3 mb-2">បុគ្គលិក / Employee Tabs</h2>
+        <button onclick="switchTab('emp-auth-section')" class="tab-btn-emp w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors bg-indigo-600 text-white">🔑 ចុះឈ្មោះ និងចូលប្រើ / Auth</button>
+        <button onclick="switchTab('emp-clock-section')" class="tab-btn-emp w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">⏰ កត់ត្រាវត្តមាន / Smart Clock-In</button>
+        <button onclick="switchTab('emp-requests-section')" class="tab-btn-emp w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">🏖️ សុំច្បាប់ និងថែមម៉ោង / Requests</button>
+        <button onclick="switchTab('emp-sales-section')" class="tab-btn-emp w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">🤝 CRM & Sales</button>
+        <button onclick="switchTab('emp-ewa-payslip')" class="tab-btn-emp w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700 hover:text-white">⚡ EWA & Payslip</button>
+      </div>
+
+      <!-- ADMIN VIEW NAVIGATION (Hidden by default) -->
+      <div id="navAdmin" class="bg-slate-800 border border-slate-700 rounded-lg p-3 sticky top-28 space-y-1 hidden">
+        <h2 class="text-xs font-bold text-amber-400 uppercase tracking-widest px-3 mb-2">អ្នកគ្រប់គ្រង / Admin Tabs</h2>
+        <button onclick="switchTab('admin-org-section')" class="tab-btn-admin w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors bg-amber-600 text-white">🏢 រចនាសម្ព័ន្ធអង្គភាព / Org & Staff</button>
+        <button onclick="switchTab('admin-shifts-section')" class="tab-btn-admin w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700">📅 Shifts & Schedules</button>
+        <button onclick="switchTab('admin-approvals-section')" class="tab-btn-admin w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700">📥 Approvals</button>
+        <button onclick="switchTab('admin-payroll-section')" class="tab-btn-admin w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700">💵 Payroll & Bank</button>
+        <button onclick="switchTab('admin-reports-webhook')" class="tab-btn-admin w-full text-left px-3 py-2 rounded text-xs font-medium transition-colors text-slate-300 hover:bg-slate-700">📊 Webhook & Reports</button>
       </div>
     </section>
 
-    <!-- MAIN FORM INTERFACE (MIDDLE COLUMN) -->
+    <!-- MIDDLE COLUMN: INPUT PLAYGROUND & FORMS -->
     <section class="lg:col-span-5 space-y-6">
-      
-      <!-- 1. AUTH & SYSTEM -->
-      <div id="auth-section" class="tab-pane space-y-4">
-        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">🔑 Authentication & Initialization</h2>
+
+      <!-- ==================== EMPLOYEE WORKSPACE PANES ==================== -->
+      <div id="employee-workspace-group" class="space-y-4">
         
-        <!-- Setup -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
-          <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded mb-2">POST</span>
-          <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/setup</h3>
-          <p class="text-xs text-slate-400 mb-3">Establish the root organization and administrator account.</p>
-          <form onsubmit="handleFormSubmit(event, '/api/v1/setup', 'POST')" class="space-y-3">
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold uppercase">Org Name</label>
-                <input type="text" name="org_name" value="Demo Company" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold uppercase">Admin Name</label>
-                <input type="text" name="admin_name" value="Owner" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold uppercase">Email Address</label>
-                <input type="email" name="email" value="admin@example.com" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold uppercase">Password</label>
-                <input type="password" name="password" value="admin123456" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-            </div>
-            <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-medium py-1.5 rounded transition-colors">Initialize Setup</button>
-          </form>
-        </div>
-
-        <!-- Login -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
-          <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded mb-2">POST</span>
-          <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/auth/login</h3>
-          <p class="text-xs text-slate-400 mb-3">Sign in to retrieve a Bearer JWT Session Token.</p>
-          <form onsubmit="handleLoginSubmit(event)" class="space-y-3">
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold uppercase">Email Address</label>
-                <input type="email" id="loginEmail" value="admin@example.com" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold uppercase">Password</label>
-                <input type="password" id="loginPassword" value="admin123456" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-            </div>
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-1.5 rounded transition-colors">Authenticate</button>
-          </form>
-        </div>
-      </div>
-
-      <!-- 2. ORG, EMPLOYEES & BRANCHES -->
-      <div id="org-section" class="tab-pane hidden space-y-4">
-        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">🏢 Organization Structures</h2>
-
-        <!-- Branches Panel -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
-          <div>
-            <div class="flex items-center justify-between">
-              <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/branches</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/branches')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
-            </div>
-            <p class="text-xs text-slate-400 mt-1">Register a physical office location workspace area.</p>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/branches', 'POST')" class="space-y-2 mt-3">
+        <!-- Tab: Emp Auth -->
+        <div id="emp-auth-section" class="tab-pane-emp space-y-4">
+          <h2 class="text-base font-bold text-white border-b border-slate-700 pb-2">🔑 គណនី និងការចូលប្រើប្រាស់ (Authentication)</h2>
+          
+          <!-- Registration (Initial Setup) -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow">
+            <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded mb-2">POST</span>
+            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បង្កើតក្រុមហ៊ុន និងគណនីដំបូង (Setup Organization)</h3>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/setup', 'POST')" class="space-y-3 mt-2">
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400">Branch Name</label>
+                  <label class="block text-[10px] text-slate-400 uppercase">ឈ្មោះក្រុមហ៊ុន</label>
+                  <input type="text" name="org_name" value="Demo Company" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 uppercase">ឈ្មោះអ្នកគ្រប់គ្រង</label>
+                  <input type="text" name="admin_name" value="Owner" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400 uppercase">អុីមែល</label>
+                  <input type="email" name="email" value="admin@example.com" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 uppercase">លេខសម្ងាត់</label>
+                  <input type="password" name="password" value="admin123456" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded transition-colors">តម្លើងប្រព័ន្ធដំបូង / Initialize Setup</button>
+            </form>
+          </div>
+
+          <!-- Login -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow">
+            <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded mb-2">POST</span>
+            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ការចូលប្រើប្រាស់ប្រព័ន្ធ (Login)</h3>
+            <form onsubmit="handleLoginSubmit(event)" class="space-y-3 mt-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400 uppercase">អុីមែល</label>
+                  <input type="email" id="loginEmail" value="admin@example.com" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400 uppercase">លេខសម្ងាត់</label>
+                  <input type="password" id="loginPassword" value="admin123456" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold py-1.5 rounded transition-colors">ចូលប្រើ / Login</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Tab: Emp Clock-In -->
+        <div id="emp-clock-section" class="tab-pane-emp hidden space-y-4">
+          <h2 class="text-base font-bold text-white border-b border-slate-700 pb-2">⏰ ការកត់ត្រាវត្តមានបុគ្គលិក (Smart Attendance)</h2>
+          
+          <!-- QR Attendance -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">កត់ត្រាតាម QR Code (QR Clock)</h3>
+            
+            <!-- Real QR code reader block -->
+            <div id="qr-reader" class="hidden w-full max-w-xs mx-auto aspect-square bg-slate-950 rounded-lg overflow-hidden border border-slate-700 my-2"></div>
+
+            <form onsubmit="handleFormSubmit(event, '/api/v1/attendance/clock', 'POST')" class="space-y-2">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">ប្រភេទ</label>
+                  <select name="kind" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="in">ចូល (In)</option>
+                    <option value="out">ចេញ (Out)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">ប្រភព</label>
+                  <input type="text" name="source" value="qr" readonly class="w-full bg-slate-900 text-xs border border-slate-700 p-1.5 text-slate-400 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">កូដ QR Token</label>
+                  <input type="text" name="qr_token" id="qr_token_input" value="token-from-admin" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none font-mono" required />
+                </div>
+              </div>
+
+              <!-- Camera QR trigger button -->
+              <button type="button" id="btnScanQR" onclick="toggleQRScanner()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold">
+                📷 បើកកាមេរ៉ាស្កេនកូដ QR / Open Camera to Scan QR
+              </button>
+
+              <div class="grid grid-cols-3 gap-2 pt-1">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Latitude</label>
+                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Longitude</label>
+                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">ភាពជាក់លាក់ (m)</label>
+                  <input type="number" name="gps_accuracy_m" value="15" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បញ្ជូនការស្កេន QR / Submit QR Clock</button>
+            </form>
+          </div>
+
+          <!-- Face Scan Attendance -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">កត់ត្រាតាមការស្កេនមុខ (Face Scan Clock)</h3>
+            
+            <!-- Dynamic Face scan viewport video -->
+            <div id="face-scan-container" class="hidden relative w-full max-w-xs mx-auto aspect-video bg-slate-950 rounded-lg overflow-hidden border border-slate-700 my-2">
+              <video id="face-video" autoplay playsinline class="w-full h-full object-cover"></video>
+              <div class="absolute inset-0 border-2 border-emerald-500/50 pointer-events-none flex items-center justify-center">
+                <div class="w-32 h-32 border-2 border-dashed border-emerald-400 rounded-full animate-pulse relative">
+                  <div class="absolute top-1/2 left-0 right-0 h-0.5 bg-emerald-400 animate-bounce"></div>
+                </div>
+              </div>
+              <div class="absolute bottom-1 left-0 right-0 text-center bg-slate-950/80 text-[9px] text-emerald-400 py-0.5 uppercase tracking-wider font-semibold">
+                កំពុងវិភាគទម្រង់មុខ... / Scanning Face...
+              </div>
+            </div>
+
+            <form onsubmit="handleFormSubmit(event, '/api/v1/attendance/face-scan', 'POST')" class="space-y-2">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">ប្រភេទ</label>
+                  <select name="kind" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="in">ចូល (In)</option>
+                    <option value="out">ចេញ (Out)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">ប្រភព</label>
+                  <input type="text" name="source" value="face_scan" readonly class="w-full bg-slate-900 text-xs border border-slate-700 p-1.5 text-slate-400 focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">ពិន្ទុភាពដូចគ្នា (%)</label>
+                  <input type="number" step="any" name="face_score" id="face_score_input" value="91.5" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+
+              <!-- Camera Face Scan trigger button -->
+              <button type="button" id="btnScanFace" onclick="toggleFaceScanner()" class="bg-teal-600 hover:bg-teal-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold">
+                👤 ស្កេនទម្រង់មុខផ្ទាល់ / Scan Face via Camera
+              </button>
+
+              <div class="grid grid-cols-2 gap-2 pt-1">
+                <div>
+                  <label class="block text-[10px] text-slate-400">Latitude</label>
+                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Longitude</label>
+                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បញ្ជូនការស្កេនមុខ / Submit Face Scan</button>
+            </form>
+          </div>
+
+          <!-- Get Personal Attendance History -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <h3 class="font-bold text-xs text-indigo-400 uppercase">មើលប្រវត្តិវត្តមានផ្ទាល់ខ្លួន</h3>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="date" id="empTodayDate" value="2026-06-05" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
+              <button onclick="fetchTodayAttendanceEmp()" class="bg-indigo-650 hover:bg-indigo-600 text-xs rounded py-1.5 text-white">បង្ហាញវត្តមានថ្ងៃនេះ</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Emp Requests -->
+        <div id="emp-requests-section" class="tab-pane-emp hidden space-y-4">
+          <h2 class="text-base font-bold text-white border-b border-slate-700 pb-2">🏖️ ស្នើសុំច្បាប់ និងថែមម៉ោង (Leave & Overtime)</h2>
+          
+          <!-- Submit Leave Request -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ការសុំច្បាប់ឈប់សម្រាក</h3>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/leave/requests')" class="text-indigo-400 hover:text-indigo-300 text-[10px] font-semibold">បញ្ជីសំណើផ្ទាល់ខ្លួន →</button>
+            </div>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/leave/requests', 'POST')" class="space-y-2">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">ប្រភេទច្បាប់</label>
+                  <select name="leave_type" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="casual">ច្បាប់ផ្ទាល់ខ្លួន (Casual)</option>
+                    <option value="sick">ច្បាប់ឈឺ (Sick)</option>
+                    <option value="annual">សម្រាកប្រចាំឆ្នាំ (Annual)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">ចាប់ពីថ្ងៃ</label>
+                  <input type="date" name="start_date" value="2026-06-10" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">រហូតដល់ថ្ងៃ</label>
+                  <input type="date" name="end_date" value="2026-06-12" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">មូលហេតុ</label>
+                <input type="text" name="reason" value="Personal matters" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">ផ្ញើសំណើសុំច្បាប់ / Submit Leave</button>
+            </form>
+          </div>
+
+          <!-- Submit Overtime Request -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ការស្នើសុំថែមម៉ោង (OT Request)</h3>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/overtime/requests')" class="text-indigo-400 hover:text-indigo-300 text-[10px] font-semibold">បញ្ជី OT ផ្ទាល់ខ្លួន →</button>
+            </div>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/overtime/requests', 'POST')" class="space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">កាលបរិច្ឆេទ</label>
+                  <input type="date" name="date" value="2026-06-08" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">ចំនួនម៉ោង</label>
+                  <input type="number" step="any" name="hours" value="2.5" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">មូលហេតុ</label>
+                <input type="text" name="reason" value="Project deployment" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">ផ្ញើសំណើថែមម៉ោង / Submit OT</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Tab: Emp Sales/CRM -->
+        <div id="emp-sales-section" class="tab-pane-emp hidden space-y-4">
+          <h2 class="text-base font-bold text-white border-b border-slate-700 pb-2">🤝 การចុះជួបអតិថិជនក្រៅការិយាល័យ (Outside Sales & CRM)</h2>
+          
+          <!-- Sales Check-in -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ចុះឈ្មោះចូលជួបអតិថិជន (Sales Check-In)</h3>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/sales/visits/checkin', 'POST')" class="space-y-2">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">លេខអតិថិជន ID</label>
+                  <input type="number" name="customer_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Latitude</label>
+                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Longitude</label>
+                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">កំណត់ចំណាំ</label>
+                <input type="text" name="notes" value="Initial meeting" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded font-semibold">កត់ត្រាចូលជួប (Check-In)</button>
+            </form>
+          </div>
+
+          <!-- Sales Checkout -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <span class="inline-block bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
+            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បញ្ចប់ការចុះជួប (Sales Check-Out)</h3>
+            <form onsubmit="handleSalesCheckout(event)" class="space-y-2">
+              <div class="grid grid-cols-3 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">លេខដំណើរជួប ID</label>
+                  <input type="number" id="visitCheckoutId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Latitude</label>
+                  <input type="number" step="any" id="visitCheckoutLat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">Longitude</label>
+                  <input type="number" step="any" id="visitCheckoutLng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-400">លទ្ធផលសម្រេចបាន</label>
+                <input type="text" id="visitCheckoutNotes" value="Follow up scheduled" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded font-semibold">កត់ត្រាចេញ (Check-Out)</button>
+            </form>
+          </div>
+
+          <!-- Get Active Clients -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow flex justify-between items-center">
+            <span class="text-xs text-slate-300 font-semibold">បញ្ជីអតិថិជន និងប្រវត្តិចុះជួប</span>
+            <div class="flex gap-1">
+              <button onclick="handleGetRequest('/api/v1/customers')" class="bg-slate-700 hover:bg-slate-600 text-[11px] px-3 py-1 rounded">មើលអតិថិជន</button>
+              <button onclick="handleFetchVisits()" class="bg-slate-700 hover:bg-slate-600 text-[11px] px-3 py-1 rounded">ប្រវត្តិចុះជួប</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Emp EWA/Payslip -->
+        <div id="emp-ewa-payslip" class="tab-pane-emp hidden space-y-4">
+          <h2 class="text-base font-bold text-white border-b border-slate-700 pb-2">⚡ ការបើកប្រាក់បៀវត្សរ៍មុន និងវិក្កយបត្រ (EWA & Payslips)</h2>
+          
+          <!-- Submit EWA Request -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="inline-block bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ស្នើបើកប្រាក់មុន (Earned Wage Access)</h3>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/ewa/requests')" class="text-indigo-400 hover:text-indigo-300 text-[10px] font-semibold font-mono">ប្រវត្តិបើកលុយមុន →</button>
+            </div>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/ewa/requests', 'POST')" class="space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">ចំនួនទឹកប្រាក់ ($)</label>
+                  <input type="number" name="amount" value="50" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">មូលហេតុចាំបាច់</label>
+                  <input type="text" name="reason" value="Emergency medicine" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded font-semibold">ស្នើសុំដកប្រាក់ / Submit EWA</button>
+            </form>
+          </div>
+
+          <!-- View Single Payslip -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <h3 class="font-bold text-xs text-slate-200">ទាញយកវិក្កយបត្រប្រាក់ខែ (View Payslip)</h3>
+            <div class="space-y-2">
+              <div class="grid grid-cols-3 gap-1">
+                <input type="number" id="payslipRunIdEmp" placeholder="Run ID" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
+                <input type="text" id="payslipUserIdEmp" placeholder="User UUID" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none col-span-2" />
+              </div>
+              <button onclick="fetchPayslipEmp()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs py-1.5 rounded font-semibold">មើល Payslip របស់ខ្ញុំ</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+
+      <!-- ==================== ADMIN/HR/MANAGER WORKSPACE PANES ==================== -->
+      <div id="admin-workspace-group" class="space-y-4 hidden">
+        
+        <!-- Tab: Admin Org & Staffing -->
+        <div id="admin-org-section" class="tab-pane-admin hidden space-y-4">
+          <h2 class="text-base font-bold text-amber-500 border-b border-slate-700 pb-2">🏢 ការរៀបចំរចនាសម្ព័ន្ធ និងគ្រប់គ្រងបុគ្គលិក</h2>
+          
+          <!-- Branches -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បង្កើតសាខាការិយាល័យ (Create Branch)</h3>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/branches')" class="text-amber-400 hover:text-amber-300 text-[10px] font-semibold">បញ្ជីសាខា →</button>
+            </div>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/branches', 'POST')" class="space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">ឈ្មោះសាខា</label>
                   <input type="text" name="name" value="Phnom Penh HQ" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Radius Threshold (m)</label>
+                  <label class="block text-[10px] text-slate-400">ចម្ងាយអនុញ្ញាត (ម៉ែត្រ)</label>
                   <input type="number" name="radius_m" value="100" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
               </div>
@@ -187,840 +510,434 @@
                   <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
               </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Register Branch</button>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">ចុះឈ្មោះសាខា / Register Branch</button>
             </form>
           </div>
-        </div>
 
-        <!-- Departments Panel -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
-          <div>
-            <div class="flex items-center justify-between">
+          <!-- Departments -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <div class="flex justify-between items-center">
               <div>
                 <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/departments</h3>
+                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បង្កើតផ្នែក/ដេប៉ាតឺម៉ង់ (Create Department)</h3>
               </div>
-              <button onclick="handleGetRequest('/api/v1/departments')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
+              <button onclick="handleGetRequest('/api/v1/departments')" class="text-amber-400 hover:text-amber-300 text-[10px] font-semibold">បញ្ជីដេប៉ាតឺម៉ង់ →</button>
             </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/departments', 'POST')" class="space-y-2 mt-3">
+            <form onsubmit="handleFormSubmit(event, '/api/v1/departments', 'POST')" class="space-y-2">
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400">Dept Name</label>
+                  <label class="block text-[10px] text-slate-400">ឈ្មោះផ្នែក</label>
                   <input type="text" name="name" value="Engineering" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Branch ID</label>
+                  <label class="block text-[10px] text-slate-400">សាខា ID</label>
                   <input type="number" name="branch_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
               </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Create Department</button>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បង្កើតផ្នែក / Create Department</button>
             </form>
           </div>
-        </div>
 
-        <!-- Employees Panel -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
-          <div>
-            <div class="flex items-center justify-between">
+          <!-- Add Staff Profile -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <div class="flex justify-between items-center">
               <div>
-                <span class="bg-indigo-900/40 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded">GET</span>
-                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/employees</h3>
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បន្ថែមគណនីបុគ្គលិកថ្មី (Add Employee)</h3>
               </div>
+              <button onclick="handleGetRequest('/api/v1/employees')" class="text-amber-400 hover:text-amber-300 text-[10px] font-semibold">បញ្ជីបុគ្គលិកទាំងអស់ →</button>
             </div>
-            <p class="text-xs text-slate-400 mt-1">Search or retrieve users inside organization scope.</p>
-            <form onsubmit="handleEmployeeSearch(event)" class="space-y-2 mt-3">
-              <div class="grid grid-cols-3 gap-1">
-                <input type="text" id="empSearchQ" placeholder="Query (name/email)" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none col-span-1" />
-                <input type="number" id="empSearchLimit" placeholder="Limit" value="10" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none col-span-1" />
-                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold rounded p-1.5">Query</button>
-              </div>
-            </form>
-          </div>
-
-          <div class="border-t border-slate-700 pt-3">
-            <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/employees</h3>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/employees', 'POST')" class="space-y-2 mt-2">
+            <form onsubmit="handleFormSubmit(event, '/api/v1/employees', 'POST')" class="space-y-2">
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400">Full Name</label>
+                  <label class="block text-[10px] text-slate-400">ឈ្មោះពេញ</label>
                   <input type="text" name="name" value="John Doe" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Email Address</label>
+                  <label class="block text-[10px] text-slate-400">អុីមែល</label>
                   <input type="email" name="email" value="john@example.com" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
               </div>
               <div class="grid grid-cols-3 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400">Password</label>
+                  <label class="block text-[10px] text-slate-400">លេខសម្ងាត់</label>
                   <input type="password" name="password" value="password123" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Role Authority</label>
+                  <label class="block text-[10px] text-slate-400">តួនាទី</label>
                   <select name="role" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
                     <option value="employee">Employee</option>
-                    <option value="sales">Sales Specialist</option>
+                    <option value="sales">Sales</option>
                     <option value="manager">Manager</option>
                     <option value="admin">Admin</option>
                     <option value="owner">Owner</option>
                   </select>
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Daily Base Rate ($)</label>
+                  <label class="block text-[10px] text-slate-400">ប្រាក់ខែ/ថ្ងៃ ($)</label>
                   <input type="number" name="daily_rate" value="50" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400">Branch ID</label>
+                  <label class="block text-[10px] text-slate-400">សាខា ID</label>
                   <input type="number" name="branch_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Department ID</label>
+                  <label class="block text-[10px] text-slate-400">ផ្នែក ID</label>
                   <input type="number" name="department_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
               </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Create User Profile</button>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បង្កើតគណនី / Create Employee</button>
             </form>
           </div>
 
-          <div class="border-t border-slate-700 pt-3">
+          <!-- Update Profile Roles (PATCH) -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
             <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
-            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/employees/{id}</h3>
-            <form onsubmit="handleEmployeePatch(event)" class="space-y-2 mt-2">
+            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">កែប្រែព័ត៌មានបុគ្គលិក (Modify Profile)</h3>
+            <form onsubmit="handleEmployeePatch(event)" class="space-y-2">
               <div class="grid grid-cols-3 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400 font-semibold">Employee ID (UUID)</label>
-                  <input type="text" id="patchEmpId" placeholder="uuid-xxxx" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                  <label class="block text-[10px] text-slate-400">បុគ្គលិក ID (UUID)</label>
+                  <input type="text" id="patchEmpId" placeholder="uuid" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400 font-semibold">New Name</label>
+                  <label class="block text-[10px] text-slate-400">ឈ្មោះថ្មី</label>
                   <input type="text" id="patchEmpName" value="John Updated" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400 font-semibold">Update Role</label>
+                  <label class="block text-[10px] text-slate-400">ប្តូរតួនាទី</label>
                   <select id="patchEmpRole" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="">Keep Unchanged</option>
+                    <option value="">រក្សាទុកដដែល</option>
                     <option value="employee">Employee</option>
-                    <option value="sales">Sales Specialist</option>
+                    <option value="sales">Sales</option>
                     <option value="manager">Manager</option>
                     <option value="admin">Admin</option>
                     <option value="owner">Owner</option>
                   </select>
                 </div>
               </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Modify Profile</button>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">រក្សាទុកការកែប្រែ / Save Changes</button>
             </form>
           </div>
         </div>
-      </div>
 
-      <!-- 3. SHIFTS & SCHEDULES -->
-      <div id="shifts-section" class="tab-pane hidden space-y-4">
-        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">📅 Shifts & Schedule Builder</h2>
-
-        <!-- Shifts Definition -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
-          <div class="flex items-center justify-between">
-            <div>
-              <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-              <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/shifts</h3>
-            </div>
-            <button onclick="handleGetRequest('/api/v1/shifts')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
-          </div>
-          <form onsubmit="handleFormSubmit(event, '/api/v1/shifts', 'POST')" class="space-y-3 mt-3">
-            <div>
-              <label class="block text-[10px] text-slate-400">Shift Template Name</label>
-              <input type="text" name="name" value="Day Shift" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-            </div>
-            <div class="grid grid-cols-2 gap-2">
+        <!-- Tab: Admin Shifts & Schedules -->
+        <div id="admin-shifts-section" class="tab-pane-admin hidden space-y-4">
+          <h2 class="text-base font-bold text-amber-500 border-b border-slate-700 pb-2">📅 การកំណត់វេនការងារ និងកាលវិភាគការងារ</h2>
+          
+          <!-- Shifts Template -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <div class="flex justify-between items-center">
               <div>
-                <label class="block text-[10px] text-slate-400">Start Time (HH:MM)</label>
-                <input type="text" name="start_time" value="08:00" placeholder="e.g. 08:00" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បង្កើតគំរូវេនការងារ (Shift Blueprint)</h3>
               </div>
+              <button onclick="handleGetRequest('/api/v1/shifts')" class="text-amber-400 hover:text-amber-300 text-[10px] font-semibold">គំរូទាំងអស់ →</button>
+            </div>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/shifts', 'POST')" class="space-y-2">
               <div>
-                <label class="block text-[10px] text-slate-400">End Time (HH:MM)</label>
-                <input type="text" name="end_time" value="17:00" placeholder="e.g. 17:00" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-            </div>
-            <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Save Shift Blueprint</button>
-          </form>
-        </div>
-
-        <!-- Schedule Assignments -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
-          <div class="flex items-center justify-between">
-            <div>
-              <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-              <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/schedule-assignments</h3>
-            </div>
-            <button onclick="handleGetRequest('/api/v1/schedule-assignments')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
-          </div>
-          <p class="text-xs text-slate-400 mt-1">Assign designated work shifts to user resources.</p>
-          <form onsubmit="handleFormSubmit(event, '/api/v1/schedule-assignments', 'POST')" class="space-y-3 mt-3">
-            <div>
-              <label class="block text-[10px] text-slate-400">User ID (UUID)</label>
-              <input type="text" name="user_id" placeholder="uuid-xxxx-xxxx" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] text-slate-400">Shift Plan ID</label>
-                <input type="number" name="shift_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400">Date</label>
-                <input type="date" name="date" value="2026-06-08" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-            </div>
-            <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Execute Assignment</button>
-          </form>
-        </div>
-      </div>
-
-      <!-- 4. SMART ATTENDANCE -->
-      <div id="attendance-section" class="tab-pane hidden space-y-4">
-        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">⏰ Smart Attendance</h2>
-
-        <!-- QR Code Attendance / Clock-in -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
-          <div>
-            <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/attendance/clock</h3>
-            <p class="text-xs text-slate-400 mt-1">Generic geo-fenced coordinates verification endpoint (QR method shown).</p>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/attendance/clock', 'POST')" class="space-y-2 mt-3">
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">Direction</label>
-                  <select name="kind" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="in">In</option>
-                    <option value="out">Out</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Source Channel</label>
-                  <input type="text" name="source" value="qr" readonly class="w-full bg-slate-900 text-xs border border-slate-700 rounded p-1.5 text-slate-400 focus:outline-none" />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">QR token string</label>
-                  <input type="text" name="qr_token" value="token-from-admin" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">Latitude</label>
-                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Longitude</label>
-                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">GPS Accuracy (m)</label>
-                  <input type="number" name="gps_accuracy_m" value="15" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Submit Clock Request</button>
-            </form>
-          </div>
-
-          <!-- Face-Scan Attendance -->
-          <div class="border-t border-slate-700 pt-3">
-            <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/attendance/face-scan</h3>
-            <p class="text-xs text-slate-400 mt-1">Submit confidence metrics for face biometric validations.</p>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/attendance/face-scan', 'POST')" class="space-y-2 mt-2">
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">Direction</label>
-                  <select name="kind" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="in">In</option>
-                    <option value="out">Out</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Source</label>
-                  <input type="text" name="source" value="face_scan" readonly class="w-full bg-slate-900 text-xs border border-slate-700 rounded p-1.5 text-slate-400 focus:outline-none" />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Score Match (0-100)</label>
-                  <input type="number" step="any" name="face_score" value="91.5" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
+                <label class="block text-[10px] text-slate-400">ឈ្មោះវេន</label>
+                <input type="text" name="name" value="Day Shift" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400">Latitude</label>
-                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                  <label class="block text-[10px] text-slate-400">ម៉ោងចូលធ្វើការ (HH:MM)</label>
+                  <input type="text" name="start_time" value="08:00" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Longitude</label>
-                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                  <label class="block text-[10px] text-slate-400">ម៉ោងចេញ (HH:MM)</label>
+                  <input type="text" name="end_time" value="17:00" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
               </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Submit Face Biometrics</button>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">រក្សាទុកគំរូវេន / Create Shift Template</button>
             </form>
           </div>
 
-          <!-- Generate QR Tokens -->
-          <div class="border-t border-slate-700 pt-3">
-            <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/attendance/qr-tokens</h3>
-            <p class="text-xs text-slate-400 mt-1">Admin generation of authenticated tokens for physical displays.</p>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/attendance/qr-tokens', 'POST')" class="space-y-2 mt-2">
+          <!-- Schedule Assignments -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ចាត់តាំងកាលវិភាគការងារ (Assign Shifts)</h3>
+              </div>
+              <button onclick="handleGetRequest('/api/v1/schedule-assignments')" class="text-amber-400 hover:text-amber-300 text-[10px] font-semibold font-mono">កាលវិភាគទាំងអស់ →</button>
+            </div>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/schedule-assignments', 'POST')" class="space-y-2">
+              <div>
+                <label class="block text-[10px] text-slate-400">បុគ្គលិក ID (UUID)</label>
+                <input type="text" name="user_id" placeholder="uuid-xxxx-xxxx" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              </div>
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400">Target Branch ID</label>
+                  <label class="block text-[10px] text-slate-400">លេខគំរូវេន ID</label>
+                  <input type="number" name="shift_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-slate-400">កាលបរិច្ឆេទ</label>
+                  <input type="date" name="date" value="2026-06-08" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                </div>
+              </div>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បញ្ជូនការចាត់តាំង / Assign Shift</button>
+            </form>
+          </div>
+
+          <!-- Generate Active QR Codes -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">បង្កើត QR Token សម្រាប់បញ្ជរស្កេន (Generate QR Tokens)</h3>
+            <form onsubmit="handleFormSubmit(event, '/api/v1/attendance/qr-tokens', 'POST')" class="space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] text-slate-400">សាខា ID</label>
                   <input type="number" name="branch_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">TTL validity (seconds)</label>
+                  <label class="block text-[10px] text-slate-400">សុពលភាព (វិនាទី)</label>
                   <input type="number" name="ttl_seconds" value="60" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
               </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Create Live Token</button>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded font-semibold">បង្កើតកូដ QR សកម្ម / Create Active Token</button>
             </form>
           </div>
         </div>
 
-        <!-- Queries & History -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-3">
-          <h3 class="font-bold text-xs text-slate-400 uppercase tracking-wide">Historical Analysis</h3>
+        <!-- Tab: Admin Approvals -->
+        <div id="admin-approvals-section" class="tab-pane-admin hidden space-y-4">
+          <h2 class="text-base font-bold text-amber-500 border-b border-slate-700 pb-2">📥 ផ្ទាំងអនុម័ត និងសម្រេចសំណើ (Approvals Hub)</h2>
           
-          <div class="border-b border-slate-700 pb-2">
-            <span class="bg-indigo-900/40 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded">GET</span>
-            <span class="font-semibold text-xs text-slate-300 ml-1">/api/v1/attendance/today</span>
-            <div class="flex items-center gap-2 mt-2">
-              <input type="date" id="attTodayDate" value="2026-06-05" class="bg-slate-950 text-xs border border-slate-700 rounded p-1 w-full focus:outline-none" />
-              <button onclick="fetchTodayAttendance()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-xs whitespace-nowrap">Query Day</button>
-            </div>
-          </div>
-
-          <div>
-            <span class="bg-indigo-900/40 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded">GET</span>
-            <span class="font-semibold text-xs text-slate-300 ml-1">/api/v1/attendance/sessions</span>
-            <div class="space-y-2 mt-2">
-              <div class="grid grid-cols-2 gap-1">
-                <input type="date" id="attSessFrom" value="2026-06-01" class="bg-slate-950 text-xs border border-slate-700 rounded p-1 focus:outline-none" />
-                <input type="date" id="attSessTo" value="2026-06-30" class="bg-slate-950 text-xs border border-slate-700 rounded p-1 focus:outline-none" />
-              </div>
-              <input type="text" id="attSessUser" placeholder="User UUID (Optional)" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 w-full focus:outline-none" />
-              <button onclick="fetchSessionsAttendance()" class="bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-xs w-full">Fetch Selected Range</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 5. LEAVE & OVERTIME -->
-      <div id="leave-section" class="tab-pane hidden space-y-4">
-        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">🏖️ Leave & Overtime Allocations</h2>
-
-        <!-- Leave Module -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
-          <div>
-            <div class="flex items-center justify-between">
+          <!-- Approve Leave -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <div class="flex justify-between items-center">
               <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/leave/requests</h3>
+                <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
+                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">អនុម័តសំណើសុំច្បាប់ (Approve Leave)</h3>
               </div>
-              <button onclick="handleGetRequest('/api/v1/leave/requests')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
+              <button onclick="handleGetRequest('/api/v1/leave/requests')" class="text-indigo-400 hover:text-indigo-300 text-[11px] font-semibold">មើលសំណើទាំងអស់ →</button>
             </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/leave/requests', 'POST')" class="space-y-2 mt-3">
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">Leave Type</label>
-                  <select name="leave_type" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="casual">Casual Leave</option>
-                    <option value="sick">Sick Leave</option>
-                    <option value="annual">Annual Leave</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Start Date</label>
-                  <input type="date" name="start_date" value="2026-06-10" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">End Date</label>
-                  <input type="date" name="end_date" value="2026-06-12" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400">Reason</label>
-                <input type="text" name="reason" value="Personal matters" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Submit Leave Request</button>
-            </form>
-          </div>
-
-          <div class="border-t border-slate-700 pt-3">
-            <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
-            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/leave/requests/{id}/approve</h3>
-            <form onsubmit="handleLeaveApprove(event)" class="space-y-2 mt-2">
+            <form onsubmit="handleLeaveApprove(event)" class="space-y-2">
               <div class="grid grid-cols-3 gap-2">
                 <div class="col-span-2">
-                  <label class="block text-[10px] text-slate-400">Request ID (Numeric)</label>
+                  <label class="block text-[10px] text-slate-400">លេខសំណើ ID (Numeric)</label>
                   <input type="number" id="leaveAppId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Action Status</label>
+                  <label class="block text-[10px] text-slate-400">សេចក្តីសម្រេច</label>
                   <select id="leaveAppStatus" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="approved">Approve</option>
-                    <option value="rejected">Reject</option>
+                    <option value="approved">យល់ព្រម (Approve)</option>
+                    <option value="rejected">បដិសេធ (Reject)</option>
                   </select>
                 </div>
               </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Finalize Decision</button>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បញ្ជូនការសម្រេចចិត្ត</button>
             </form>
           </div>
-        </div>
 
-        <!-- Overtime Module -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
-          <div>
-            <div class="flex items-center justify-between">
+          <!-- Approve Overtime -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <div class="flex justify-between items-center">
               <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/overtime/requests</h3>
+                <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
+                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">អនុម័តការថែមម៉ោង (Approve Overtime)</h3>
               </div>
-              <button onclick="handleGetRequest('/api/v1/overtime/requests')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
+              <button onclick="handleGetRequest('/api/v1/overtime/requests')" class="text-indigo-400 hover:text-indigo-300 text-[11px] font-semibold">មើលសំណើ OT ទាំងអស់ →</button>
             </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/overtime/requests', 'POST')" class="space-y-2 mt-3">
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">Target Date</label>
-                  <input type="date" name="date" value="2026-06-08" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Hours Requested</label>
-                  <input type="number" step="any" name="hours" value="2.5" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400">Overtime Reason</label>
-                <input type="text" name="reason" value="Project deployment" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Request Overtime</button>
-            </form>
-          </div>
-
-          <div class="border-t border-slate-700 pt-3">
-            <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
-            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/overtime/requests/{id}/approve</h3>
-            <form onsubmit="handleOvertimeApprove(event)" class="space-y-2 mt-2">
+            <form onsubmit="handleOvertimeApprove(event)" class="space-y-2">
               <div class="grid grid-cols-3 gap-2">
                 <div class="col-span-2">
-                  <label class="block text-[10px] text-slate-400">Request ID (Numeric)</label>
+                  <label class="block text-[10px] text-slate-400">លេខសំណើ ID (Numeric)</label>
                   <input type="number" id="otAppId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Action Status</label>
+                  <label class="block text-[10px] text-slate-400">សេចក្តីសម្រេច</label>
                   <select id="otAppStatus" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="approved">Approve</option>
-                    <option value="rejected">Reject</option>
+                    <option value="approved">យល់ព្រម (Approve)</option>
+                    <option value="rejected">បដិសេធ (Reject)</option>
                   </select>
                 </div>
               </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Finalize Decision</button>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បញ្ជូនការសម្រេចចិត្ត</button>
             </form>
           </div>
-        </div>
-      </div>
 
-      <!-- 6. CRM & OUTSIDE SALES -->
-      <div id="sales-section" class="tab-pane hidden space-y-4">
-        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">🤝 CRM & Outside Sales Tracking</h2>
-
-        <!-- Customers Panel -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
-          <div class="flex items-center justify-between">
-            <div>
-              <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-              <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/customers</h3>
-            </div>
-            <button onclick="handleGetRequest('/api/v1/customers')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
-          </div>
-          <form onsubmit="handleFormSubmit(event, '/api/v1/customers', 'POST')" class="space-y-2 mt-3">
-            <div>
-              <label class="block text-[10px] text-slate-400">Company Name</label>
-              <input type="text" name="name" value="Acme Corp" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-            </div>
-            <div class="grid grid-cols-2 gap-2">
+          <!-- Approve EWA Requests -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <div class="flex justify-between items-center">
               <div>
-                <label class="block text-[10px] text-slate-400">Contact Person</label>
-                <input type="text" name="contact_person" value="Jane" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
+                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">អនុម័តបើកលុយមុន (Approve EWA)</h3>
               </div>
-              <div>
-                <label class="block text-[10px] text-slate-400">Phone</label>
-                <input type="text" name="phone" value="+85512345678" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
+              <button onclick="handleGetRequest('/api/v1/ewa/requests')" class="text-indigo-400 hover:text-indigo-300 text-[11px] font-semibold">សំណើ EWA ទាំងអស់ →</button>
             </div>
-            <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Register Client Profile</button>
-          </form>
-        </div>
-
-        <!-- Visit Operations -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
-          <div>
-            <div class="flex items-center justify-between">
-              <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/sales/visits/checkin</h3>
-              </div>
-              <button onclick="handleFetchVisits()" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET Range →</button>
-            </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/sales/visits/checkin', 'POST')" class="space-y-2 mt-3">
+            <form onsubmit="handleEWAApprove(event)" class="space-y-2">
               <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">Customer ID</label>
-                  <input type="number" name="customer_id" value="1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                <div class="col-span-2">
+                  <label class="block text-[10px] text-slate-400">លេខសំណើ ID</label>
+                  <input type="number" id="ewaAppId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Latitude</label>
-                  <input type="number" step="any" name="lat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Longitude</label>
-                  <input type="number" step="any" name="lng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-              </div>
-              <div>
-                <label class="block text-[10px] text-slate-400">Notes</label>
-                <input type="text" name="notes" value="Initial meeting" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Perform Check-in</button>
-            </form>
-          </div>
-
-          <div class="border-t border-slate-700 pt-3">
-            <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
-            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/sales/visits/{id}/checkout</h3>
-            <form onsubmit="handleSalesCheckout(event)" class="space-y-2 mt-2">
-              <div class="grid grid-cols-3 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400 font-semibold">Visit ID</label>
-                  <input type="number" id="visitCheckoutId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400 font-semibold">Latitude</label>
-                  <input type="number" step="any" id="visitCheckoutLat" value="11.5564" class="gps-lat w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400 font-semibold">Longitude</label>
-                  <input type="number" step="any" id="visitCheckoutLng" value="104.9282" class="gps-lng w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                  <label class="block text-[10px] text-slate-400">សេចក្តីសម្រេច</label>
+                  <select id="ewaAppStatus" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                    <option value="approved">យល់ព្រម (Approve)</option>
+                    <option value="rejected">បដិសេធ (Reject)</option>
+                  </select>
                 </div>
               </div>
-              <div>
-                <label class="block text-[10px] text-slate-400 font-semibold">Checkout Comments</label>
-                <input type="text" id="visitCheckoutNotes" value="Follow up scheduled" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Perform Checkout</button>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">បញ្ជូនការសម្រេចចិត្ត</button>
             </form>
           </div>
         </div>
 
-        <!-- CRM Operations -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-3">
-          <h3 class="font-bold text-xs text-slate-400 uppercase tracking-wide">Summary & Performance Metrics</h3>
+        <!-- Tab: Admin Payroll & Banking -->
+        <div id="admin-payroll-section" class="tab-pane-admin hidden space-y-4">
+          <h2 class="text-base font-bold text-amber-500 border-b border-slate-700 pb-2">💵 ការគណនាប្រាក់បៀវត្សរ៍ និងប្រព័ន្ធធនាគារ (Payroll Engine)</h2>
           
-          <div class="border-b border-slate-700 pb-2">
-            <div class="flex items-center gap-2">
-              <span class="bg-indigo-900/40 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded">GET</span>
-              <span class="font-semibold text-xs text-slate-300">/api/v1/sales/summary</span>
-            </div>
-            <div class="flex gap-1 mt-2">
-              <input type="date" id="salesSumDate" value="2026-06-05" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 w-full focus:outline-none" />
-              <button onclick="fetchSalesSummary()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded whitespace-nowrap">Load Summary</button>
-              <button onclick="postSalesTelegram()" class="bg-sky-600 hover:bg-sky-500 text-xs px-3 py-1.5 rounded text-white whitespace-nowrap">✈️ Telegram</button>
-            </div>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between">
-              <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <span class="font-semibold text-xs text-slate-300 ml-1">/api/v1/kpis</span>
-              </div>
-              <button onclick="fetchKPIs()" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET KPIs →</button>
-            </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/kpis', 'POST')" class="space-y-2 mt-2">
-              <div class="grid grid-cols-2 gap-2">
+          <!-- Payroll Config & Execution -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-4">
+            <div>
+              <div class="flex justify-between items-center">
                 <div>
-                  <label class="block text-[10px] text-slate-400">User ID</label>
-                  <input type="text" name="user_id" placeholder="uuid-xxxx-xxxx" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                  <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+                  <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ដំណើរការគណនាប្រាក់បៀវត្សរ៍ (Run Payroll)</h3>
                 </div>
+                <button onclick="handleGetRequest('/api/v1/payroll/runs')" class="text-amber-400 hover:text-amber-300 text-[11px] font-semibold">បញ្ជីធ្លាប់ Run ទាំងអស់ →</button>
+              </div>
+              <form onsubmit="handleFormSubmit(event, '/api/v1/payroll/runs', 'POST')" class="space-y-2 mt-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400">Target Month</label>
+                  <label class="block text-[10px] text-slate-400">សម្រាប់ខែ-ឆ្នាំ (YYYY-MM)</label>
                   <input type="text" name="month" value="2026-06" placeholder="YYYY-MM" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
+                <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded font-semibold">ចាប់ផ្តើមគណនា / Execute Run</button>
+              </form>
+            </div>
+
+            <!-- Run Control Interface -->
+            <div class="border-t border-slate-700 pt-3 space-y-3">
+              <h4 class="text-xs font-semibold text-slate-300">ការគ្រប់គ្រង និងទាញយកទិន្នន័យ (Run ID actions)</h4>
+              <div>
+                <label class="block text-[10px] text-slate-400">បញ្ចូល Run ID</label>
+                <input type="number" id="payrollRunId" placeholder="e.g. 1" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 w-full focus:outline-none" />
               </div>
               <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] text-slate-400">Target Visits</label>
-                  <input type="number" name="target_visits" value="20" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Target Rev ($)</label>
-                  <input type="number" name="target_revenue" value="5000" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
+                <button onclick="getPayrollRunDetails()" class="bg-slate-700 hover:bg-slate-600 text-[11px] py-1 px-2 rounded">មើលលម្អិត</button>
+                <button onclick="approvePayrollRun()" class="bg-emerald-600 hover:bg-emerald-500 text-[11px] py-1 px-2 rounded font-semibold text-white">អនុម័ត Run នេះ</button>
               </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Configure Target</button>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <!-- 7. PAYROLL & BANKING -->
-      <div id="payroll-section" class="tab-pane hidden space-y-4">
-        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">💵 Payroll Controls & Banking</h2>
-
-        <!-- Payroll Rules -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
-          <div class="flex items-center justify-between">
-            <div>
-              <span class="bg-blue-900/40 text-blue-400 border border-blue-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PUT</span>
-              <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/payroll/rules</h3>
-            </div>
-            <button onclick="handleGetRequest('/api/v1/payroll/rules')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET Current →</button>
-          </div>
-          <p class="text-xs text-slate-400 mt-1">Configure systemic withholding formulas globally.</p>
-          <form onsubmit="handleFormSubmit(event, '/api/v1/payroll/rules', 'PUT')" class="space-y-2 mt-3">
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] text-slate-400">Tax Multiplier (0-1)</label>
-                <input type="number" step="any" name="tax_rate" value="0.1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              <div class="grid grid-cols-2 gap-2">
+                <button onclick="payoutPayrollRun()" class="bg-indigo-600 hover:bg-indigo-500 text-[11px] py-1 px-2 rounded font-semibold text-white">ប្រកាសបើកលុយ</button>
+                <button onclick="generateBankBatches()" class="bg-violet-600 hover:bg-violet-500 text-[11px] py-1 px-2 rounded font-semibold text-white">បង្កើត Bank Batch</button>
               </div>
-              <div>
-                <label class="block text-[10px] text-slate-400">Social Insurance (0-1)</label>
-                <input type="number" step="any" name="insurance_rate" value="0.05" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+              <div class="border-t border-slate-700 pt-2 grid grid-cols-2 gap-2">
+                <button onclick="downloadCSV('/api/v1/payroll/runs/' + getRunId() + '/export.csv')" class="bg-slate-750 hover:bg-slate-700 text-[10px] py-1 px-1 rounded truncate">📄 Export CSV</button>
+                <button onclick="downloadCSV('/api/v1/payroll/runs/' + getRunId() + '/bank-statement.csv')" class="bg-slate-750 hover:bg-slate-700 text-[10px] py-1 px-1 rounded truncate">🏛️ Bank Statement</button>
               </div>
             </div>
-            <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Set Active Formulas</button>
-          </form>
-        </div>
+          </div>
 
-        <!-- Run Payroll cycles -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
-          <div>
-            <div class="flex items-center justify-between">
+          <!-- Bank Accounts Linking -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <div class="flex justify-between items-center">
               <div>
                 <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/payroll/runs</h3>
+                <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ភ្ជាប់គណនីធនាគាររបស់បុគ្គលិក (Bank Accounts)</h3>
               </div>
-              <button onclick="handleGetRequest('/api/v1/payroll/runs')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET Runs →</button>
+              <button onclick="handleGetRequest('/api/v1/bank/accounts')" class="text-amber-400 hover:text-amber-300 text-[10px] font-semibold">គណនីទាំងអស់ →</button>
             </div>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/payroll/runs', 'POST')" class="space-y-2 mt-3">
-              <div>
-                <label class="block text-[10px] text-slate-400">Target Month Execution</label>
-                <input type="text" name="month" value="2026-06" placeholder="YYYY-MM" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Initialize Run Process</button>
-            </form>
-          </div>
-
-          <!-- Actions on Existing Run ID -->
-          <div class="border-t border-slate-700 pt-3 space-y-3">
-            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Payroll Run Execution Options</h4>
-            <div>
-              <label class="block text-[10px] text-slate-400 font-semibold mb-1">Target Run ID</label>
-              <input type="number" id="payrollRunId" placeholder="e.g. 1" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 w-full focus:outline-none" />
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <button onclick="getPayrollRunDetails()" class="bg-slate-700 hover:bg-slate-600 text-xs py-1 px-2 rounded">GET Run Profile</button>
-              <button onclick="approvePayrollRun()" class="bg-emerald-600 hover:bg-emerald-500 text-xs py-1 px-2 rounded text-white font-semibold">Approve Run</button>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <button onclick="payoutPayrollRun()" class="bg-indigo-600 hover:bg-indigo-500 text-xs py-1 px-2 rounded text-white font-semibold">POST Payout</button>
-              <button onclick="generateBankBatches()" class="bg-violet-600 hover:bg-violet-500 text-xs py-1 px-2 rounded text-white font-semibold">Build Bank Batch</button>
-            </div>
-            <div class="border-t border-slate-700 pt-2 grid grid-cols-2 gap-2">
-              <button onclick="downloadCSV('/api/v1/payroll/runs/' + getRunId() + '/export.csv')" class="bg-slate-700 hover:bg-slate-600 text-[11px] py-1 px-1 rounded truncate">📄 Export Ledger CSV</button>
-              <button onclick="downloadCSV('/api/v1/payroll/runs/' + getRunId() + '/bank-statement.csv')" class="bg-slate-700 hover:bg-slate-600 text-[11px] py-1 px-1 rounded truncate">🏛️ Bank Statement CSV</button>
-            </div>
-            <div>
-              <div class="grid grid-cols-3 gap-1">
-                <input type="text" id="payslipUserId" placeholder="Employee UUID" class="bg-slate-950 text-[11px] border border-slate-700 rounded p-1 col-span-2 focus:outline-none" />
-                <button onclick="fetchPayslip()" class="bg-slate-700 hover:bg-slate-600 text-[11px] py-1 px-1 rounded">View Payslip</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bank Routing / Settlement Setup -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
-          <div>
-            <div class="flex items-center justify-between">
-              <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/bank/accounts</h3>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/bank/accounts')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET List →</button>
-            </div>
-            <p class="text-xs text-slate-400 mt-1">Configure banking routes for employee settlement.</p>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/bank/accounts', 'POST')" class="space-y-2 mt-3">
+            <form onsubmit="handleFormSubmit(event, '/api/v1/bank/accounts', 'POST')" class="space-y-2">
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400">User ID</label>
-                  <input type="text" name="user_id" placeholder="uuid-xxxx-xxxx" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                  <label class="block text-[10px] text-slate-400">បុគ្គលិក ID (UUID)</label>
+                  <input type="text" name="user_id" placeholder="uuid" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Financial Institution</label>
+                  <label class="block text-[10px] text-slate-400">ឈ្មោះធនាគារ</label>
                   <input type="text" name="bank_name" value="ABA Bank" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400">Account Number</label>
+                  <label class="block text-[10px] text-slate-400">លេខគណនី</label>
                   <input type="text" name="account_number" value="123456789" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Beneficiary Name</label>
+                  <label class="block text-[10px] text-slate-400">ឈ្មោះម្ចាស់គណនី</label>
                   <input type="text" name="account_name" value="John Doe" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
                 </div>
               </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Bind Bank Details</button>
+              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs py-1.5 rounded">ភ្ជាប់ធនាគារ / Link Bank Account</button>
             </form>
           </div>
-
-          <!-- Batches Panel -->
-          <div class="border-t border-slate-700 pt-3">
-            <div class="flex items-center justify-between">
-              <div>
-                <span class="bg-indigo-900/40 text-indigo-400 border border-indigo-500/30 text-[10px] font-bold px-2 py-0.5 rounded">GET</span>
-                <span class="font-semibold text-xs text-slate-300 ml-1">/api/v1/bank/batches</span>
-              </div>
-              <button onclick="handleGetRequest('/api/v1/bank/batches')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET Batches →</button>
-            </div>
-            
-            <div class="mt-3">
-              <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-              <span class="font-semibold text-xs text-slate-300 ml-1">/api/v1/bank/batches/{id}/mark-submitted</span>
-              <div class="flex gap-1 mt-2">
-                <input type="number" id="bankBatchSubId" placeholder="Batch ID" class="bg-slate-950 text-xs border border-slate-700 rounded p-1.5 w-full focus:outline-none" />
-                <button onclick="markBankBatchSubmitted()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded whitespace-nowrap">Mark Sent</button>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
 
-      <!-- 8. INTEGRATIONS & REPORTS -->
-      <div id="ewa-section" class="tab-pane hidden space-y-4">
-        <h2 class="text-lg font-bold text-white border-b border-slate-700 pb-2">⚡ Integrations & Reports</h2>
-
-        <!-- Earned Wage Access -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-4">
-          <div>
-            <div class="flex items-center justify-between">
+        <!-- Tab: Admin Reports & Webhook Simulation -->
+        <div id="admin-reports-webhook" class="tab-pane-admin hidden space-y-4">
+          <h2 class="text-base font-bold text-amber-500 border-b border-slate-700 pb-2">📊 របាយការណ៍ និងការធ្វើតេស្តសេវាទិន្នន័យ (Reports & Webhooks)</h2>
+          
+          <!-- Webhook Simulator -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
+            <h3 class="font-bold text-xs text-slate-200 inline-block ml-1">ការកត់ត្រាវត្តមានសិប្បនិម្មិតពីម៉ាស៊ីន (Biometric Webhook Simulator)</h3>
+            <form onsubmit="handleWebhookSimulate(event)" class="space-y-2">
               <div>
-                <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded">POST</span>
-                <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/ewa/requests</h3>
+                <label class="block text-[10px] text-slate-400 font-semibold uppercase font-mono">លេខសម្ងាត់ឧបករណ៍ (X-Device-Secret)</label>
+                <input type="text" id="webhookSecret" value="TEST_WEBHOOK_SECRET_KEY" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none font-mono" required />
               </div>
-              <button onclick="handleGetRequest('/api/v1/ewa/requests')" class="text-indigo-400 hover:text-indigo-300 text-xs font-semibold">GET Requests →</button>
-            </div>
-            <p class="text-xs text-slate-400 mt-1">Submit micro-draw EWA requests against accrued earnings.</p>
-            <form onsubmit="handleFormSubmit(event, '/api/v1/ewa/requests', 'POST')" class="space-y-2 mt-3">
               <div class="grid grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] text-slate-400">Draw Request Amount ($)</label>
-                  <input type="number" name="amount" value="50" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                  <label class="block text-[10px] text-slate-400">លេខសម្គាល់ម៉ាស៊ីន (Device ID)</label>
+                  <input type="text" id="webhookDeviceId" value="DEV-9988" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none font-mono" required />
                 </div>
                 <div>
-                  <label class="block text-[10px] text-slate-400">Withdrawal Reason</label>
-                  <input type="text" name="reason" value="Emergency medicine" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                  <label class="block text-[10px] text-slate-400">Enroll ID របស់បុគ្គលិក</label>
+                  <input type="text" id="webhookFaceId" value="12345" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none font-mono" required />
                 </div>
               </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Initiate Draw</button>
+              <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold py-1.5 rounded transition-colors">បញ្ជូន Event Webhook / Dispatch Webhook</button>
             </form>
           </div>
 
-          <div class="border-t border-slate-700 pt-3">
-            <span class="bg-amber-900/40 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded">PATCH</span>
-            <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/ewa/requests/{id}/approve</h3>
-            <form onsubmit="handleEWAApprove(event)" class="space-y-2 mt-2">
-              <div class="grid grid-cols-3 gap-2">
-                <div class="col-span-2">
-                  <label class="block text-[10px] text-slate-400">Request ID (Numeric)</label>
-                  <input type="number" id="ewaAppId" placeholder="e.g. 1" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
-                </div>
-                <div>
-                  <label class="block text-[10px] text-slate-400">Action Status</label>
-                  <select id="ewaAppStatus" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                    <option value="approved">Approve</option>
-                    <option value="rejected">Reject</option>
-                  </select>
-                </div>
-              </div>
-              <button type="submit" class="w-full bg-slate-700 hover:bg-slate-600 text-xs font-medium py-1.5 rounded">Process Decision</button>
-            </form>
-          </div>
-        </div>
-
-        <!-- Biometric Webhook Event Simulator -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm">
-          <span class="bg-emerald-900/40 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded mb-2 inline-block">POST</span>
-          <h3 class="font-bold text-sm text-slate-200 inline-block ml-1">/api/v1/devices/face-events</h3>
-          <p class="text-xs text-slate-400 mb-3">Simulates a webhook request generated by an integrated biometric gateway device.</p>
-          <form onsubmit="handleWebhookSimulate(event)" class="space-y-2">
-            <div>
-              <label class="block text-[10px] text-slate-400 font-semibold uppercase">X-Device-Secret Key</label>
-              <input type="text" id="webhookSecret" value="TEST_WEBHOOK_SECRET_KEY" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none font-mono" required />
-            </div>
+          <!-- Reporting Hub -->
+          <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow space-y-3">
+            <h3 class="font-bold text-xs text-slate-200 uppercase">របាយការណ៍សរុប (System Reports)</h3>
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <label class="block text-[10px] text-slate-400">Device Hardware ID</label>
-                <input type="text" id="webhookDeviceId" value="DEV-9988" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                <label class="block text-[10px] text-slate-400">ប្រភេទជុំព័ត៌មាន</label>
+                <select id="reportPeriod" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
+                  <option value="daily">ប្រចាំថ្ងៃ (Daily)</option>
+                  <option value="weekly">ប្រចាំសប្តាហ៍ (Weekly)</option>
+                  <option value="monthly">ប្រចាំខែ (Monthly)</option>
+                </select>
               </div>
               <div>
-                <label class="block text-[10px] text-slate-400">Biometric Enroll ID</label>
-                <input type="text" id="webhookFaceId" value="12345" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" required />
+                <label class="block text-[10px] text-slate-400">កាលបរិច្ឆេទគោលដៅ</label>
+                <input type="date" id="reportDate" value="2026-06-05" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
               </div>
             </div>
-            <button type="submit" class="w-full bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold py-1.5 rounded transition-colors">Dispatch Event</button>
-          </form>
+            <div class="grid grid-cols-3 gap-1 pt-1">
+              <button onclick="fetchSummaryReport()" class="bg-slate-750 hover:bg-slate-700 text-[10px] py-1 px-1 rounded truncate text-slate-300">ទាញ Summary</button>
+              <button onclick="fetchInsightsReport()" class="bg-slate-750 hover:bg-slate-700 text-[10px] py-1 px-1 rounded truncate text-slate-300">ទាញ Insights</button>
+              <button onclick="triggerTelegramDaily()" class="bg-indigo-600 hover:bg-indigo-500 text-[10px] py-1 px-1 rounded truncate text-white font-mono">✈️ Send Daily Telegram</button>
+            </div>
+          </div>
         </div>
 
-        <!-- System Intelligence Reporting -->
-        <div class="bg-slate-800 border border-slate-700 rounded-lg p-4 shadow-sm space-y-3">
-          <h3 class="font-bold text-xs text-slate-400 uppercase tracking-wide">Reporting Intelligence</h3>
-          
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-[10px] text-slate-400">Period Interval</label>
-              <select id="reportPeriod" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none">
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[10px] text-slate-400">Target Anchor Date</label>
-              <input type="date" id="reportDate" value="2026-06-05" class="w-full bg-slate-950 text-xs border border-slate-700 rounded p-1.5 focus:outline-none" />
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-3 gap-1 pt-1">
-            <button onclick="fetchSummaryReport()" class="bg-slate-700 hover:bg-slate-600 text-[11px] py-1 px-1 rounded truncate text-slate-300">GET Summary</button>
-            <button onclick="fetchInsightsReport()" class="bg-slate-700 hover:bg-slate-600 text-[11px] py-1 px-1 rounded truncate text-slate-300">GET Insights</button>
-            <button onclick="triggerTelegramDaily()" class="bg-indigo-600 hover:bg-indigo-500 text-[11px] py-1 px-1 rounded truncate text-white">✈️ Telegram</button>
-          </div>
-        </div>
       </div>
 
     </section>
 
-    <!-- LIVE CONSOLE (RIGHT COLUMN) -->
+    <!-- RIGHT COLUMN: DYNAMIC INTERACTIVE CONSOLE -->
     <section class="lg:col-span-4 flex flex-col gap-4">
       <div class="bg-slate-950 border border-slate-800 rounded-lg p-4 flex flex-col h-[750px] sticky top-28 shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
           <h2 class="text-xs font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-1.5">
             <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse"></span>
-            Interactive Console Log
+            ប្រព័ន្ធត្រួតពិនិត្យទិន្នន័យ / Console Log
           </h2>
-          <button onclick="clearConsole()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white px-2 py-1 rounded transition-colors">Clear Output</button>
+          <button onclick="clearConsole()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white px-2 py-1 rounded transition-colors">សម្អាតផ្ទាំង</button>
         </div>
 
-        <!-- Terminal Output -->
         <div id="consoleOutput" class="flex-1 overflow-y-auto font-mono text-xs space-y-4 pr-1 leading-relaxed">
-          <div class="text-slate-500 italic">API action logs, network headers, response status values, and structured JSON return data will render dynamically inside this panel. Ready for testing.</div>
+          <div class="text-slate-500 italic">ព័ត៌មាននៃការហៅទូរស័ព្ទទៅកាន់ API, HTTP Headers, response payloads និងកំហុសប្រព័ន្ធផ្សេងៗនឹងបង្ហាញនៅទីនេះ។</div>
         </div>
       </div>
     </section>
@@ -1028,12 +945,15 @@
   </main>
 
   <footer class="bg-slate-950 border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-500 mt-auto">
-    <p>API Test Suite Console. Direct request framework. All security variables and sessions are temporarily managed locally in-memory.</p>
+    <p>Checkin-Me Camera Enabled Client Core. Decodes standard QR configurations and emulates facial landmark metrics directly.</p>
   </footer>
 
-  <!-- SCRIPT LOGIC -->
+  <!-- PROGRAM LOGIC -->
   <script>
-    // System Initialization & Configurations
+    // State indicators
+    let html5QrCodeInstance = null;
+    let faceVideoStreamInstance = null;
+
     document.addEventListener("DOMContentLoaded", () => {
       const cachedToken = localStorage.getItem("api_token");
       if (cachedToken) {
@@ -1042,53 +962,202 @@
       checkHealth();
     });
 
-    // Navigation Tab Switching Logic
-    function switchTab(activeTabId) {
-      document.querySelectorAll(".tab-pane").forEach(pane => {
-        pane.classList.add("hidden");
-      });
-      document.getElementById(activeTabId).classList.remove("hidden");
+    // Toggle logic between different layouts
+    function toggleWorkspace(type) {
+      const empW = document.getElementById("employee-workspace-group");
+      const adminW = document.getElementById("admin-workspace-group");
+      const navEmp = document.getElementById("navEmployee");
+      const navAdmin = document.getElementById("navAdmin");
+      const btnEmp = document.getElementById("btnEmpWorkspace");
+      const btnAdmin = document.getElementById("btnAdminWorkspace");
 
-      // Update Tab CSS
-      document.querySelectorAll("#navTabs button").forEach(btn => {
-        btn.classList.remove("bg-indigo-600", "text-white");
-        btn.classList.add("text-slate-300", "hover:bg-slate-700", "hover:text-white");
-      });
+      // Stop active streams to prevent lock resources on switch
+      stopAllCameraStreams();
 
-      // Target active tab
-      const clickedBtn = Array.from(document.querySelectorAll("#navTabs button")).find(btn => 
-        btn.getAttribute("onclick").includes(activeTabId)
-      );
-      if (clickedBtn) {
-        clickedBtn.classList.remove("text-slate-300", "hover:bg-slate-700", "hover:text-white");
-        clickedBtn.classList.add("bg-indigo-600", "text-white");
+      if (type === "employee") {
+        empW.classList.remove("hidden");
+        adminW.classList.add("hidden");
+        navEmp.classList.remove("hidden");
+        navAdmin.classList.add("hidden");
+        btnEmp.className = "px-4 py-1.5 rounded text-xs font-semibold transition-all bg-indigo-600 text-white";
+        btnAdmin.className = "px-4 py-1.5 rounded text-xs font-semibold transition-all text-slate-400 hover:text-white";
+        switchTab('emp-auth-section');
+      } else {
+        empW.classList.add("hidden");
+        adminW.classList.remove("hidden");
+        navEmp.classList.add("hidden");
+        navAdmin.classList.remove("hidden");
+        btnEmp.className = "px-4 py-1.5 rounded text-xs font-semibold transition-all text-slate-400 hover:text-white";
+        btnAdmin.className = "px-4 py-1.5 rounded text-xs font-semibold transition-all bg-amber-600 text-white";
+        switchTab('admin-org-section');
       }
     }
 
-    // Capture Local Coordinates via Geolocation Helper
+    // Tab switching logic for both views
+    function switchTab(activeTabId) {
+      stopAllCameraStreams();
+      
+      if (activeTabId.startsWith("emp-")) {
+        document.querySelectorAll(".tab-pane-emp").forEach(pane => pane.classList.add("hidden"));
+        document.getElementById(activeTabId).classList.remove("hidden");
+
+        document.querySelectorAll(".tab-btn-emp").forEach(btn => {
+          btn.classList.remove("bg-indigo-600", "text-white");
+          btn.classList.add("text-slate-300", "hover:bg-slate-700", "hover:text-white");
+        });
+        const clickedBtn = Array.from(document.querySelectorAll(".tab-btn-emp")).find(btn => 
+          btn.getAttribute("onclick").includes(activeTabId)
+        );
+        if (clickedBtn) {
+          clickedBtn.classList.remove("text-slate-300", "hover:bg-slate-700", "hover:text-white");
+          clickedBtn.classList.add("bg-indigo-600", "text-white");
+        }
+      } else {
+        document.querySelectorAll(".tab-pane-admin").forEach(pane => pane.classList.add("hidden"));
+        document.getElementById(activeTabId).classList.remove("hidden");
+
+        document.querySelectorAll(".tab-btn-admin").forEach(btn => {
+          btn.classList.remove("bg-amber-600", "text-white");
+          btn.classList.add("text-slate-300", "hover:bg-slate-700");
+        });
+        const clickedBtn = Array.from(document.querySelectorAll(".tab-btn-admin")).find(btn => 
+          btn.getAttribute("onclick").includes(activeTabId)
+        );
+        if (clickedBtn) {
+          clickedBtn.classList.remove("text-slate-300", "hover:bg-slate-700");
+          clickedBtn.classList.add("bg-amber-600", "text-white");
+        }
+      }
+    }
+
+    // Clean Camera Streams
+    function stopAllCameraStreams() {
+      // 1. Clean QR Scanner Instance
+      if (html5QrCodeInstance) {
+        try {
+          html5QrCodeInstance.stop().catch(e => {});
+        } catch(e){}
+        html5QrCodeInstance = null;
+      }
+      const readerDiv = document.getElementById("qr-reader");
+      if (readerDiv) readerDiv.classList.add("hidden");
+      const btnQR = document.getElementById("btnScanQR");
+      if (btnQR) {
+        btnQR.innerText = "📷 បើកកាមេរ៉ាស្កេនកូដ QR / Open Camera to Scan QR";
+        btnQR.className = "bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold";
+      }
+
+      // 2. Clean Face Scan stream
+      if (faceVideoStreamInstance) {
+        faceVideoStreamInstance.getTracks().forEach(track => track.stop());
+        faceVideoStreamInstance = null;
+      }
+      const containerFace = document.getElementById("face-scan-container");
+      if (containerFace) containerFace.classList.add("hidden");
+      const btnFace = document.getElementById("btnScanFace");
+      if (btnFace) {
+        btnFace.innerText = "👤 ស្កេនទម្រង់មុខផ្ទាល់ / Scan Face via Camera";
+        btnFace.className = "bg-teal-600 hover:bg-teal-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold";
+      }
+    }
+
+    // Interactive Real-time Camera QR Scanner Decodes
+    async function toggleQRScanner() {
+      const readerDiv = document.getElementById("qr-reader");
+      const btn = document.getElementById("btnScanQR");
+      const qrInput = document.getElementById("qr_token_input");
+
+      if (html5QrCodeInstance) {
+        stopAllCameraStreams();
+        logToConsole("បានបិទប្រព័ន្ធស្កេន QR ។", "SYSTEM");
+      } else {
+        readerDiv.classList.remove("hidden");
+        btn.innerText = "🛑 បិទកាមេរ៉ាស្កេន / Stop Scanning";
+        btn.className = "bg-rose-600 hover:bg-rose-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold";
+        
+        html5QrCodeInstance = new Html5Qrcode("qr-reader");
+        html5QrCodeInstance.start(
+          { facingMode: "environment" },
+          { 
+            fps: 10, 
+            qrbox: (width, height) => { 
+              return { width: Math.min(width, 220), height: Math.min(height, 220) }; 
+            } 
+          },
+          (decodedText) => {
+            qrInput.value = decodedText;
+            logToConsole(`ស្កេន QR ជោគជ័យ៖ [${decodedText}]`, "SUCCESS");
+            stopAllCameraStreams(); // Closes camera loop automatically
+          },
+          (err) => { /* Ignore constant framework search warnings */ }
+        ).catch(err => {
+          logToConsole("មិនអាចបើកកាមេរ៉ាបានទេ៖ " + err, "ERROR");
+          stopAllCameraStreams();
+        });
+      }
+    }
+
+    // Dynamic Live Face Capture Biometrics Scanner
+    async function toggleFaceScanner() {
+      const container = document.getElementById("face-scan-container");
+      const video = document.getElementById("face-video");
+      const btn = document.getElementById("btnScanFace");
+      const faceScoreInput = document.getElementById("face_score_input");
+
+      if (faceVideoStreamInstance) {
+        stopAllCameraStreams();
+        logToConsole("បានបិទការស្កេនទម្រង់មុខ។", "SYSTEM");
+      } else {
+        container.classList.remove("hidden");
+        btn.innerText = "🛑 បិទការស្កេនមុខ / Cancel Scan";
+        btn.className = "bg-rose-600 hover:bg-rose-500 text-white text-xs px-3 py-1.5 rounded flex items-center justify-center gap-1.5 w-full font-semibold";
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+          faceVideoStreamInstance = stream;
+          video.srcObject = stream;
+          
+          logToConsole("កំពុងវិភាគទម្រង់មុខ (សូមរក្សាជំហររបស់អ្នក)...", "SYSTEM");
+          
+          // Mimics standard biometric classification checks
+          setTimeout(() => {
+            if (faceVideoStreamInstance) {
+              const simulatedScore = (91 + Math.random() * 8.5).toFixed(1);
+              faceScoreInput.value = simulatedScore;
+              logToConsole(`វិភាគទម្រង់មុខជោគជ័យ! ភាពដូចគ្នា៖ ${simulatedScore}%`, "SUCCESS");
+              stopAllCameraStreams();
+            }
+          }, 3000);
+        } catch (err) {
+          logToConsole("មិនអាចបើកកាមេរ៉ាស្កេនមុខបានទេ៖ " + err, "ERROR");
+          stopAllCameraStreams();
+        }
+      }
+    }
+
+    // Geolocation Grabber Helper
     function getLocation() {
       if (navigator.geolocation) {
-        logToConsole("Requesting physical browser coordinate data...", "SYSTEM");
+        logToConsole("កំពុងស្នើសុំទិន្នន័យទីតាំងពី Browser...", "SYSTEM");
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-            logToConsole(`Fetched Coordinates: Lat ${lat}, Lng ${lng}`, "SUCCESS");
+            logToConsole(`ទទួលបានទីតាំង: Lat ${lat}, Lng ${lng}`, "SUCCESS");
             
-            // Populating geolocation inputs
             document.querySelectorAll(".gps-lat").forEach(el => el.value = lat.toFixed(6));
             document.querySelectorAll(".gps-lng").forEach(el => el.value = lng.toFixed(6));
           },
           (error) => {
-            logToConsole(`Geolocation rejected or inaccessible: ${error.message}. Resorting to defaults.`, "ERROR");
+            logToConsole(`មិនអាចទទួលបានទិន្នន័យទីតាំងទេ: ${error.message}`, "ERROR");
           }
         );
       } else {
-        logToConsole("Browser context does not present geolocation features.", "ERROR");
+        logToConsole("Browser មិនមានមុខងារ Geolocation ទេ", "ERROR");
       }
     }
 
-    // Core Request Engine
+    // Reusable Request Core Handler
     async function makeRequest(path, method = "GET", bodyPayload = null, extraHeaders = {}) {
       const baseUrl = document.getElementById("baseUrlInput").value.replace(/\/$/, "");
       const token = document.getElementById("tokenInput").value.trim();
@@ -1113,7 +1182,7 @@
       }
 
       const startTime = performance.now();
-      logToConsole(`Initiating Network Request: ${method} ${targetUrl}`, "TX");
+      logToConsole(`ហៅទៅកាន់: ${method} ${targetUrl}`, "TX");
       if (bodyPayload) {
         logToConsole(`Payload: ${JSON.stringify(bodyPayload, null, 2)}`, "BODY");
       }
@@ -1123,46 +1192,44 @@
         const duration = (performance.now() - startTime).toFixed(1);
         const isJson = response.headers.get("content-type")?.includes("application/json");
         
-        // Handle stream-based exports (like CSVs)
         const disposition = response.headers.get("Content-Disposition");
         if (disposition && disposition.includes("attachment")) {
           const blob = await response.blob();
-          logToConsole(`Received Binary Stream: [Status ${response.status}] [Duration: ${duration}ms]`, "RX");
+          logToConsole(`ទទួលបានឯកសារ Stream: [Status ${response.status}] [រយះពេល: ${duration}ms]`, "RX");
           return { response, blob, isFile: true, status: response.status };
         }
 
         const data = isJson ? await response.json() : await response.text();
         
         if (response.ok) {
-          logToConsole(`Succeeded Process: [Status ${response.status}] [Duration: ${duration}ms]`, "RX");
+          logToConsole(`ជោគជ័យ: [Status ${response.status}] [រយះពេល: ${duration}ms]`, "RX");
           logToConsole(JSON.stringify(data, null, 2), "DATA");
           return { data, status: response.status, ok: true };
         } else {
-          logToConsole(`Failed Process: [Status ${response.status}] [Duration: ${duration}ms]`, "ERROR");
+          logToConsole(`បរាជ័យ: [Status ${response.status}] [រយះពេល: ${duration}ms]`, "ERROR");
           logToConsole(typeof data === 'object' ? JSON.stringify(data, null, 2) : data, "ERROR_BODY");
           return { data, status: response.status, ok: false };
         }
       } catch (err) {
-        logToConsole(`Network Request Error: ${err.message}`, "ERROR");
+        logToConsole(`កំហុសបណ្តាញតភ្ជាប់: ${err.message}`, "ERROR");
         return { error: err.message, ok: false };
       }
     }
 
-    // Logger Engine UI Handler
+    // Logger Display 
     function logToConsole(message, type = "INFO") {
       const consoleOutput = document.getElementById("consoleOutput");
       const block = document.createElement("div");
-      block.className = "p-2 rounded border text-xs leading-5 break-words ";
+      block.className = "p-2 rounded border text-[11px] leading-relaxed break-words ";
 
-      // Set thematic colors based on action type
       switch (type) {
         case "TX":
-          block.className += "bg-slate-900 border-slate-700 text-slate-300 font-bold";
-          block.innerHTML = `<span>⚡</span> [OUT] ${message}`;
+          block.className += "bg-slate-900 border-slate-700 text-slate-300 font-semibold";
+          block.innerHTML = `<span>⚡</span> [ផ្ញើ] ${message}`;
           break;
         case "RX":
-          block.className += "bg-indigo-950 border-indigo-900/40 text-indigo-300 font-bold";
-          block.innerHTML = `<span>📡</span> [IN] ${message}`;
+          block.className += "bg-indigo-950 border-indigo-900/40 text-indigo-300 font-semibold";
+          block.innerHTML = `<span>📡</span> [ទទួល] ${message}`;
           break;
         case "BODY":
         case "DATA":
@@ -1170,19 +1237,19 @@
           block.innerText = message;
           break;
         case "ERROR":
-          block.className += "bg-rose-950/40 border-rose-900 text-rose-300 font-semibold";
-          block.innerHTML = `<span>🚨</span> [FAIL] ${message}`;
+          block.className += "bg-rose-950/45 border-rose-900 text-rose-300 font-semibold";
+          block.innerHTML = `<span>🚨</span> [បរាជ័យ] ${message}`;
           break;
         case "ERROR_BODY":
-          block.className += "bg-rose-950/50 border-rose-900 text-rose-400 font-mono whitespace-pre-wrap overflow-x-auto";
+          block.className += "bg-rose-950/60 border-rose-900 text-rose-400 font-mono whitespace-pre-wrap overflow-x-auto";
           block.innerText = message;
           break;
         case "SUCCESS":
           block.className += "bg-emerald-950/40 border-emerald-900 text-emerald-300 font-semibold";
-          block.innerHTML = `<span>🟢</span> [SUCCESS] ${message}`;
+          block.innerHTML = `<span>🟢</span> [ជោគជ័យ] ${message}`;
           break;
         default:
-          block.className += "bg-slate-900 border-slate-800 text-slate-400";
+          block.className += "bg-slate-900 border-slate-850 text-slate-400";
           block.innerText = message;
       }
 
@@ -1191,38 +1258,37 @@
     }
 
     function clearConsole() {
-      document.getElementById("consoleOutput").innerHTML = `<div class="text-slate-500 italic">Terminal logs cleared. Ready for next activity execution.</div>`;
+      document.getElementById("consoleOutput").innerHTML = `<div class="text-slate-500 italic">ផ្ទាំងកត់ត្រាទិន្នន័យត្រូវបានសម្អាតរួចរាល់។</div>`;
     }
 
     function clearToken() {
       document.getElementById("tokenInput").value = "";
       localStorage.removeItem("api_token");
-      logToConsole("JWT Token cleared.", "SYSTEM");
+      logToConsole("JWT Token ត្រូវបានសម្អាតរួចរាល់។", "SYSTEM");
     }
 
-    // Verify Server Health Setup
+    // Health Verification check
     async function checkHealth() {
       const result = await makeRequest("/health", "GET");
       const healthBadge = document.getElementById("healthBadge");
       if (result.ok) {
-        healthBadge.innerText = "Online";
+        healthBadge.innerText = "Online / ដំណើរការ";
         healthBadge.className = "text-emerald-400 font-semibold";
       } else {
-        healthBadge.innerText = "Offline";
+        healthBadge.innerText = "Offline / រអាក់រអួល";
         healthBadge.className = "text-rose-400 font-semibold";
       }
     }
 
-    // Dynamic Generic Form Processor helper
+    // Generic form submission handler
     async function handleFormSubmit(event, path, method) {
       event.preventDefault();
       const formData = new FormData(event.target);
       const payload = {};
       formData.forEach((value, key) => {
-        // Parse numerical values to ensure valid payload formats
-        if (key === "branch_id" || key === "department_id" || key === "radius_m" || key === "ttl_seconds" || key === "customer_id") {
+        if (["branch_id", "department_id", "radius_m", "ttl_seconds", "customer_id"].includes(key)) {
           payload[key] = parseInt(value, 10);
-        } else if (key === "lat" || key === "lng" || key === "gps_accuracy_m" || key === "face_score" || key === "hours" || key === "amount" || key === "daily_rate" || key === "tax_rate" || key === "insurance_rate" || key === "target_visits" || key === "target_revenue") {
+        } else if (["lat", "lng", "gps_accuracy_m", "face_score", "hours", "amount", "daily_rate", "tax_rate", "insurance_rate", "target_visits", "target_revenue"].includes(key)) {
           payload[key] = parseFloat(value);
         } else {
           payload[key] = value;
@@ -1231,16 +1297,15 @@
 
       const res = await makeRequest(path, method, payload);
       
-      // Auto-save Token dynamically during initialization or setup sequences
       if (res.ok && res.data && (res.data.token || res.data.access_token)) {
         const token = res.data.token || res.data.access_token;
         document.getElementById("tokenInput").value = token;
         localStorage.setItem("api_token", token);
-        logToConsole("Dynamic context update: Authorization Session Bound.", "SUCCESS");
+        logToConsole("ប្រព័ន្ធបានទាញយក និងរក្សាទុក JWT Token រួចរាល់។", "SUCCESS");
       }
     }
 
-    // Auth Login Handler 
+    // Handle authentication login submissions
     async function handleLoginSubmit(event) {
       event.preventDefault();
       const email = document.getElementById("loginEmail").value;
@@ -1251,21 +1316,18 @@
         const token = res.data.token || res.data.access_token;
         document.getElementById("tokenInput").value = token;
         localStorage.setItem("api_token", token);
-        logToConsole("Session authorization established.", "SUCCESS");
+        logToConsole("ចូលប្រព័ន្ធជោគជ័យ និងទទួលបាន Token។", "SUCCESS");
       }
     }
 
-    // Simple GET helper
     function handleGetRequest(path) {
       makeRequest(path, "GET");
     }
 
-    // Dynamic profile check
     function fetchMe() {
       makeRequest("/api/v1/me", "GET");
     }
 
-    // Search query builders
     function handleEmployeeSearch(event) {
       event.preventDefault();
       const q = document.getElementById("empSearchQ").value;
@@ -1276,7 +1338,6 @@
       makeRequest(`/api/v1/employees?${queryParams.toString()}`, "GET");
     }
 
-    // Profile updates
     function handleEmployeePatch(event) {
       event.preventDefault();
       const empId = document.getElementById("patchEmpId").value.trim();
@@ -1288,29 +1349,19 @@
       if (role) body.role = role;
 
       if (!empId) {
-        logToConsole("Requires a valid target User ID", "ERROR");
+        logToConsole("សូមបញ្ចូលព័ត៌មានបុគ្គលិក ID ជាមុនសិន", "ERROR");
         return;
       }
       makeRequest(`/api/v1/employees/${empId}`, "PATCH", body);
     }
 
-    // Active Day clock searches
-    function fetchTodayAttendance() {
-      const date = document.getElementById("attTodayDate").value;
+    // Employee view attendance check
+    function fetchTodayAttendanceEmp() {
+      const date = document.getElementById("empTodayDate").value;
       makeRequest(`/api/v1/attendance/today?date=${date}`, "GET");
     }
 
-    // Log range query configurations
-    function fetchSessionsAttendance() {
-      const from = document.getElementById("attSessFrom").value;
-      const to = document.getElementById("attSessTo").value;
-      const userId = document.getElementById("attSessUser").value.trim();
-      let path = `/api/v1/attendance/sessions?from=${from}&to=${to}`;
-      if (userId) path += `&user_id=${userId}`;
-      makeRequest(path, "GET");
-    }
-
-    // Flow Approval logic
+    // Leave & Overtime logic approvals
     function handleLeaveApprove(event) {
       event.preventDefault();
       const id = document.getElementById("leaveAppId").value;
@@ -1325,7 +1376,7 @@
       makeRequest(`/api/v1/overtime/requests/${id}/approve`, "PATCH", { status });
     }
 
-    // Checkout processing logic
+    // Sales CRM Actions
     function handleSalesCheckout(event) {
       event.preventDefault();
       const id = document.getElementById("visitCheckoutId").value;
@@ -1339,26 +1390,12 @@
       makeRequest("/api/v1/sales/visits?from=2026-06-01&to=2026-06-30", "GET");
     }
 
-    function fetchSalesSummary() {
-      const date = document.getElementById("salesSumDate").value;
-      makeRequest(`/api/v1/sales/summary?date=${date}`, "GET");
-    }
-
-    function postSalesTelegram() {
-      const date = document.getElementById("salesSumDate").value;
-      makeRequest(`/api/v1/sales/summary/telegram?date=${date}`, "POST");
-    }
-
-    function fetchKPIs() {
-      makeRequest("/api/v1/kpis?month=2026-06", "GET");
-    }
-
-    // Payroll helper options
+    // Payroll helper processes
     function getRunId() {
       const runId = document.getElementById("payrollRunId").value;
       if (!runId) {
-        logToConsole("Please enter a Target Payroll Run ID", "ERROR");
-        return "1"; // Default fall-through 
+        logToConsole("សូមបញ្ចូលលេខ Payroll Run ID សិន", "ERROR");
+        return "1";
       }
       return runId;
     }
@@ -1371,7 +1408,6 @@
       makeRequest(`/api/v1/payroll/runs/${getRunId()}/approve`, "POST");
     }
 
-    // Trigger payout export
     function payoutPayrollRun() {
       makeRequest(`/api/v1/payroll/runs/${getRunId()}/payout-export`, "POST");
     }
@@ -1380,13 +1416,14 @@
       makeRequest(`/api/v1/payroll/runs/${getRunId()}/bank-batches`, "POST", { bank_name: "ABA Bank" });
     }
 
-    function fetchPayslip() {
-      const userId = document.getElementById("payslipUserId").value.trim();
-      if (!userId) {
-        logToConsole("Must input a Target Employee UUID", "ERROR");
+    function fetchPayslipEmp() {
+      const runId = document.getElementById("payslipRunIdEmp").value;
+      const userId = document.getElementById("payslipUserIdEmp").value.trim();
+      if (!runId || !userId) {
+        logToConsole("សូមបញ្ចូលព័ត៌មាន Run ID និង User UUID ជាមុនសិន", "ERROR");
         return;
       }
-      makeRequest(`/api/v1/payroll/runs/${getRunId()}/payslips/${userId}`, "GET");
+      makeRequest(`/api/v1/payroll/runs/${runId}/payslips/${userId}`, "GET");
     }
 
     async function downloadCSV(path) {
@@ -1399,17 +1436,8 @@
         document.body.appendChild(link);
         link.click();
         link.parentNode.removeChild(link);
-        logToConsole("Browser File Download Initiated.", "SUCCESS");
+        logToConsole("ការទាញយកឯកសារប្រព័ន្ធត្រូវបានដំណើរការ។", "SUCCESS");
       }
-    }
-
-    function markBankBatchSubmitted() {
-      const id = document.getElementById("bankBatchSubId").value;
-      if (!id) {
-        logToConsole("Provide a Batch ID", "ERROR");
-        return;
-      }
-      makeRequest(`/api/v1/bank/batches/${id}/mark-submitted`, "POST");
     }
 
     function handleEWAApprove(event) {
@@ -1419,7 +1447,7 @@
       makeRequest(`/api/v1/ewa/requests/${id}/approve`, "PATCH", { status });
     }
 
-    // Simulates an API hardware Event Post 
+    // Webhook simulators
     function handleWebhookSimulate(event) {
       event.preventDefault();
       const secret = document.getElementById("webhookSecret").value;
@@ -1438,13 +1466,14 @@
       });
     }
 
-    // Reports Execution Handlers
+    // Reports Hub triggers
     function fetchSummaryReport() {
       const period = document.getElementById("reportPeriod").value;
       const date = document.getElementById("reportDate").value;
       makeRequest(`/api/v1/reports/summary?period=${period}&date=${date}`, "GET");
     }
 
+    // Trigger daily insights report
     function fetchInsightsReport() {
       const period = document.getElementById("reportPeriod").value;
       const date = document.getElementById("reportDate").value;
